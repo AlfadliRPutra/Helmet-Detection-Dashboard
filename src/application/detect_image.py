@@ -22,14 +22,14 @@ def show():
     if uploaded_image is not None:
         # Tampilkan gambar yang diunggah
         image = Image.open(uploaded_image)
-        st.image(image, caption="Gambar yang Diupload", use_column_width=True)
+        st.image(image, caption="Gambar yang Diupload", use_container_width=True)
 
         # Tombol Deteksi
         with st.spinner("Memproses gambar..."):
             if st.button("Deteksi Helm"):
                 # Simulasi: Menampilkan hasil deteksi (ganti nanti dengan model deteksi yang sebenarnya)
                 st.markdown("🔍 **Hasil Deteksi**:")
-                st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Construction_workers.jpg/640px-Construction_workers.jpg", caption="Contoh Hasil Deteksi", use_column_width=True)
+                st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Construction_workers.jpg/640px-Construction_workers.jpg", caption="Contoh Hasil Deteksi", use_container_width=True)
                 st.success("Helm berhasil terdeteksi di gambar.")
     else:
         st.warning("Silakan unggah gambar untuk memulai deteksi.")
