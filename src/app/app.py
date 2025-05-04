@@ -1,10 +1,10 @@
 import streamlit as st
 
 # Import setiap menu
-from .model_overview import show as show_model_overview
-from .detect_image import show as show_detect_image
-from .detect_video import show as show_detect_video
-from .realtime_camera import show as show_realtime_camera
+from app.model_overview import show as show_model_overview
+from app.detect_image import show as show_detect_image
+from app.detect_video import show as show_detect_video
+from app.realtime_camera import show as show_realtime_camera
 
 st.set_page_config(page_title="Object Detection App", layout="wide")
 
