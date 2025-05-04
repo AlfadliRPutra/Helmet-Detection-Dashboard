@@ -4,7 +4,7 @@ import streamlit as st
 from model_overview import show as show_model_overview
 from detect_image import show as show_detect_image
 from detect_video import show as show_detect_video
-from realtime_camera import show as show_realtime_camera
+from realtime_camera_detection import show as show_realtime_camera_detection
 
 st.set_page_config(page_title="Object Detection App", layout="wide")
 
@@ -27,4 +27,4 @@ elif menu == "Detect Image":
 elif menu == "Detect Video":
     show_detect_video()
 elif menu == "Realtime Camera Detection":
-    show_realtime_camera()
+    show_realtime_camera_detection()
