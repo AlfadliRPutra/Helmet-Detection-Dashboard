@@ -7,10 +7,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 # Import setiap menu
-from app.model_overview import show as show_model_overview
-from app.detect_image import show as show_detect_image
-from app.detect_video import show as show_detect_video
-from app.realtime_camera import show as show_realtime_camera
+from application.model_overview import show as show_model_overview
+from application.detect_image import show as show_detect_image
+from application.detect_video import show as show_detect_video
+from application.realtime_camera import show as show_realtime_camera
 
 st.set_page_config(page_title="Object Detection App", layout="wide")
 
