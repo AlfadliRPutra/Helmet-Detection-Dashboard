@@ -1,10 +1,4 @@
 import streamlit as st
-import sys
-import os
-
-# Tambahkan src/ ke PYTHONPATH secara manual
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 
 # Import setiap menu
 from application.model_overview import show as show_model_overview
