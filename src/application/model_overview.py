@@ -30,7 +30,7 @@ def show():
     # Training curve (online image)
     st.subheader("📉 Training Loss Curve")
     st.image(
-        "https://raw.githubusercontent.com/ultralytics/yolov5/master/docs/train_batch0.jpg",
+        "https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg",
         caption="Training loss vs Epoch",
         use_container_width=True
     )
@@ -38,7 +38,7 @@ def show():
     # Confusion matrix (online image)
     st.subheader("🧮 Confusion Matrix")
     st.image(
-        "https://raw.githubusercontent.com/ultralytics/yolov5/master/docs/confusion_matrix.png",
+       "https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg",
         caption="Confusion Matrix",
         use_container_width=True
     )
