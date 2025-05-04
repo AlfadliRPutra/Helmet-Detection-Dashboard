@@ -13,7 +13,7 @@ st.set_page_config(page_title="Object Detection App", layout="wide")
 st.sidebar.title("📚 Menu")
 menu = st.sidebar.radio(
     "Pilih halaman:",
-    ("Model Overview", "Detect Image", "Detect Video", "Realtime Camera Detection")
+    ("Model Overview", "Detect Image", "Home", "Detect Video", "Realtime Camera Detection")
 )
 
 
