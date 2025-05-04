@@ -32,7 +32,7 @@ def show():
     st.image(
         "https://raw.githubusercontent.com/ultralytics/yolov5/master/docs/train_batch0.jpg",
         caption="Training loss vs Epoch",
-        use_column_width=True
+        use_container_width=True
     )
 
     # Confusion matrix (online image)
@@ -40,7 +40,7 @@ def show():
     st.image(
         "https://raw.githubusercontent.com/ultralytics/yolov5/master/docs/confusion_matrix.png",
         caption="Confusion Matrix",
-        use_column_width=True
+        use_container_width=True
     )
 
     # Prediksi contoh (online image)
@@ -48,7 +48,7 @@ def show():
     st.image(
         "https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg",
         caption="Contoh deteksi helm (simulasi)",
-        use_column_width=True
+        use_container_width=True
     )
 
     st.info("Catatan: Model dilatih menggunakan 5000 gambar pelatihan dan 1000 gambar validasi.")
