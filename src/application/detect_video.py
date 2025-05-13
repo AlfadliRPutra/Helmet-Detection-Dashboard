@@ -2,10 +2,9 @@ import streamlit as st
 import cv2
 import tempfile
 import os
-from PIL import Image
+import numpy as np
 from ultralytics import YOLO
 from settings import MODEL_PATH
-import numpy as np
 
 @st.cache_resource
 def load_model():
@@ -13,10 +12,9 @@ def load_model():
 
 model = load_model()
 
-# Fungsi deteksi frame video
-def detect_objects_in_frame(frame, confidence_threshold=0.3):
+# Fungsi deteksi objek per frame
+def detect_objects_yolo_ultralytics(frame, confidence_threshold=0.3):
     results = model(frame)
-
     boxes = results[0].boxes.xyxy
     scores = results[0].boxes.conf
     class_ids = results[0].boxes.cls
@@ -42,7 +40,6 @@ def detect_objects_in_frame(frame, confidence_threshold=0.3):
 
     return frame
 
-# Streamlit UI
 def show():
     st.markdown(
         """
@@ -63,7 +60,7 @@ def show():
 
         if st.button("Deteksi Helm"):
             with st.spinner("Memproses video, mohon tunggu..."):
-                # Simpan video sementara
+                # Simpan video input
                 temp_input = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
                 temp_input.write(uploaded_video.read())
                 temp_input.close()
@@ -73,30 +70,25 @@ def show():
                 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                 fps = cap.get(cv2.CAP_PROP_FPS)
 
+                # Simpan video output
                 temp_output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-                out = cv2.VideoWriter(
-                    temp_output_path,
-                    cv2.VideoWriter_fourcc(*'mp4v'),
-                    fps,
-                    (width, height)
-                )
+                out = cv2.VideoWriter(temp_output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
                         break
-                    processed_frame = detect_objects_in_frame(frame)
-                    out.write(processed_frame)
+
+                    frame = detect_objects_yolo_ultralytics(frame)
+                    out.write(frame)
 
                 cap.release()
                 out.release()
 
-                # Buka kembali file sebagai binary untuk memastikan sudah ditutup
-                with open(temp_output_path, 'rb') as f:
-                    video_bytes = f.read()
-
-                st.markdown("🔍 **Hasil Deteksi Video**:")
-                st.video(video_bytes)
+                # Tampilkan hasil
+                with open(temp_output_path, 'rb') as video_file:
+                    st.markdown("🔍 **Hasil Deteksi Video**:")
+                    st.video(video_file.read())
                 st.success("Video selesai diproses.")
 
     else:
