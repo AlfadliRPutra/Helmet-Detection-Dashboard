@@ -12,10 +12,11 @@ def load_model():
     return model
 model=load_model()
 
-# Fungsi deteksi objek
+
+# Fungsi deteksi objek yang telah dimodifikasi
 def obj_detect(img_path, confidence_threshold=0.3):
     img = cv2.imread(img_path)
-    results = model(img)  # Using the loaded YOLO model to get predictions
+    results = model(img)  # Menggunakan model YOLO yang telah dimuat
 
     boxes = results[0].boxes.xyxy
     scores = results[0].boxes.conf
@@ -23,19 +24,30 @@ def obj_detect(img_path, confidence_threshold=0.3):
 
     detect_img = img.copy()
 
+    # Mapping warna berdasarkan class ID
+    class_colors = {
+        0: (0, 255, 0),     # Hijau - Helmet
+        1: (0, 0, 255),     # Merah - No Helmet
+        2: (255, 0, 0),     # Biru - Rider
+        3: (0, 165, 255)    # Oranye - Motorcycle (warna BGR: Orange)
+    }
+
     for i in range(len(scores)):
         if scores[i] > confidence_threshold:
             box = boxes[i].tolist()
             score = scores[i].item()
-            class_id = class_ids[i].item()
+            class_id = int(class_ids[i].item())
 
             x_min, y_min, x_max, y_max = map(int, box)
-            cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-            label = f'Conf: {score:.2f} | Class: {int(class_id)}'
-            cv2.putText(detect_img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            color = class_colors.get(class_id, (255, 255, 255))  # Default putih jika class_id tidak dikenali
+            cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), color, 2)
+
+            label = f'{score:.2f}'
+            cv2.putText(detect_img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
     detect_img = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
     return detect_img
+
 
 
 # Streamlit UI

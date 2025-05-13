@@ -1,5 +1,7 @@
 import streamlit as st
 
+st.set_page_config(page_title="Object Detection App", layout="wide")
+
 # Import setiap menu
 from home import show as show_home
 from model_overview import show as show_model_overview
@@ -8,7 +10,7 @@ from detect_video import show as show_detect_video
 from realtime_camera_detection import show as show_realtime_camera_detection
 
 
-st.set_page_config(page_title="Object Detection App", layout="wide")
+
 
 # Sidebar
 st.sidebar.title("📚 Menu")
