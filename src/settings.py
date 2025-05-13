@@ -1,4 +1,5 @@
 DEFAULT_CONFIDENCE_THRESHOLD = 0.5
 DEMO_IMAGE = "images/demo.jpg"
-MODEL = "model/MobileNetSSD_deploy.caffemodel"
-PROTOTXT = "model/MobileNetSSD_deploy.prototxt.txt"
+MODEL_PATH = "model/best.pt"
+# PROTOTXT = "model/MobileNetSSD_deploy.prototxt.txt"
+

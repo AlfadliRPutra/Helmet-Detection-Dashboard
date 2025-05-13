@@ -1,39 +1,74 @@
 import streamlit as st
 from PIL import Image
+import cv2
+import numpy as np
+import tempfile
+from ultralytics import YOLO  
+from app import model
 
+
+# Fungsi deteksi objek
+def obj_detect(img_path, confidence_threshold=0.3):
+    img = cv2.imread(img_path)
+    results = model(img)
+
+    boxes = results[0].boxes.xyxy
+    scores = results[0].boxes.conf
+    class_ids = results[0].boxes.cls
+
+    detect_img = img.copy()
+
+    for i in range(len(scores)):
+        if scores[i] > confidence_threshold:
+            box = boxes[i].tolist()
+            score = scores[i].item()
+            class_id = class_ids[i].item()
+
+            x_min, y_min, x_max, y_max = map(int, box)
+            cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+            label = f'Conf: {score:.2f} | Class: {int(class_id)}'
+            cv2.putText(detect_img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+    detect_img = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
+    return detect_img
+
+# Streamlit UI
 def show():
     st.markdown(
         """
-        <h2 style='text-align: center;'>🖼️ Detect Helm on Image</h2>
+        <h2 style='text-align: center;'>🖼️ Deteksi Helm pada Gambar</h2>
         <hr style="margin-top: 5px; margin-bottom: 30px;">
         """, unsafe_allow_html=True
     )
 
-    # Deskripsi Halaman
     st.markdown("""
     Di sini, kamu dapat mengunggah gambar dan melihat hasil deteksi helm pada gambar tersebut. 
     Cukup pilih gambar dan klik **Deteksi** untuk menampilkan hasilnya.
     """)
 
-    # Upload Gambar
     st.subheader("📤 Unggah Gambar untuk Deteksi")
     uploaded_image = st.file_uploader("Pilih gambar", type=["jpg", "jpeg", "png"])
 
     if uploaded_image is not None:
-        # Tampilkan gambar yang diunggah
         image = Image.open(uploaded_image)
         st.image(image, caption="Gambar yang Diupload", use_container_width=True)
 
-        # Tombol Deteksi
-        with st.spinner("Memproses gambar..."):
-            if st.button("Deteksi Helm"):
-                # Simulasi: Menampilkan hasil deteksi (ganti nanti dengan model deteksi yang sebenarnya)
+        if st.button("Deteksi Helm"):
+            with st.spinner("Memproses gambar..."):
+                # Simpan gambar sementara untuk dibaca OpenCV
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+                    image.save(temp_file.name)
+                    result_image = obj_detect(temp_file.name)
+
                 st.markdown("🔍 **Hasil Deteksi**:")
-                st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Construction_workers.jpg/640px-Construction_workers.jpg", caption="Contoh Hasil Deteksi", use_container_width=True)
-                st.success("Helm berhasil terdeteksi di gambar.")
+                st.image(result_image, caption="Hasil Deteksi", use_container_width=True)
     else:
         st.warning("Silakan unggah gambar untuk memulai deteksi.")
-    
+
     st.markdown("""
-    **Catatan**: Deteksi ini menggunakan model simulasi. Ganti dengan model nyata untuk hasil yang lebih akurat.
+    **Catatan**: Deteksi ini menggunakan model YOLO yang telah dilatih. Pastikan model sudah diload dengan benar.
     """)
+
+# Jalankan fungsi Streamlit jika ini file utama
+# if __name__ == "__main__":
+#     show()
