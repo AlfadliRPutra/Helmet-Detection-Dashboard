@@ -84,5 +84,6 @@ def show():
         st.warning("Silakan unggah gambar untuk memulai deteksi.")
 
     st.markdown(""" 
-    **Catatan**: Deteksi ini menggunakan model YOLO yang telah dilatih. Pastikan model sudah diload dengan benar.
+    **Catatan**: hijau: helmet.  merah:no helmet, biru:rider, orange: motorcycle
     """)
+

@@ -1,37 +1,104 @@
 import streamlit as st
+import cv2
+import tempfile
+import os
+from PIL import Image
+from ultralytics import YOLO
+from settings import MODEL_PATH
+import numpy as np
 
+@st.cache_resource
+def load_model():
+    return YOLO(MODEL_PATH)
+
+model = load_model()
+
+# Fungsi deteksi frame video
+def detect_objects_in_frame(frame, confidence_threshold=0.3):
+    results = model(frame)
+
+    boxes = results[0].boxes.xyxy
+    scores = results[0].boxes.conf
+    class_ids = results[0].boxes.cls
+
+    class_colors = {
+        0: (0, 255, 0),     # Helmet - Green
+        1: (0, 0, 255),     # No Helmet - Red
+        2: (255, 0, 0),     # Rider - Blue
+        3: (0, 165, 255)    # Motorcycle - Orange (BGR)
+    }
+
+    for i in range(len(scores)):
+        if scores[i] > confidence_threshold:
+            box = boxes[i].tolist()
+            score = scores[i].item()
+            class_id = int(class_ids[i].item())
+
+            x_min, y_min, x_max, y_max = map(int, box)
+            color = class_colors.get(class_id, (255, 255, 255))  # default: white
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color, 2)
+            label = f'{score:.2f}'
+            cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+    return frame
+
+# Streamlit UI
 def show():
     st.markdown(
         """
-        <h2 style='text-align: center;'>🎥 Detect Helm on Video</h2>
+        <h2 style='text-align: center;'>🎥 Deteksi Helm pada Video</h2>
         <hr style="margin-top: 5px; margin-bottom: 30px;">
         """, unsafe_allow_html=True
     )
 
-    # Deskripsi Halaman
     st.markdown("""
-    Di sini, kamu dapat mengunggah video untuk mendeteksi helm pada setiap frame video tersebut.
-    Cukup pilih video dan klik **Deteksi** untuk memulai proses deteksi.
+    Unggah video dan klik **Deteksi** untuk memproses helm di tiap frame.
     """)
 
-    # Upload Video
-    st.subheader("📤 Unggah Video untuk Deteksi")
+    st.subheader("📤 Unggah Video")
     uploaded_video = st.file_uploader("Pilih video", type=["mp4", "mov", "avi"])
 
     if uploaded_video is not None:
-        # Tampilkan video yang diunggah
         st.video(uploaded_video)
 
-        # Tombol Deteksi
-        with st.spinner("Memproses video..."):
-            if st.button("Deteksi Helm"):
-                # Simulasi: Menampilkan hasil deteksi video (ganti nanti dengan model deteksi yang sebenarnya)
+        if st.button("Deteksi Helm"):
+            with st.spinner("Memproses video, mohon tunggu..."):
+                # Simpan video sementara
+                temp_input = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+                temp_input.write(uploaded_video.read())
+                temp_input.close()
+
+                cap = cv2.VideoCapture(temp_input.name)
+
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                fps = cap.get(cv2.CAP_PROP_FPS)
+
+                temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+                out = cv2.VideoWriter(
+                    temp_output.name,
+                    cv2.VideoWriter_fourcc(*'mp4v'),
+                    fps,
+                    (width, height)
+                )
+
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    processed_frame = detect_objects_in_frame(frame)
+                    out.write(processed_frame)
+
+                cap.release()
+                out.release()
+
                 st.markdown("🔍 **Hasil Deteksi Video**:")
-                st.video(uploaded_video)  # Tampilkan video asli (seharusnya hasil deteksi nanti)
-                st.success("Helm berhasil terdeteksi pada video.")
+                st.video(temp_output.name)
+                st.success("Video selesai diproses.")
+
     else:
-        st.warning("Silakan unggah video untuk memulai deteksi.")
-    
+        st.warning("Silakan unggah video terlebih dahulu.")
+
     st.markdown("""
-    **Catatan**: Deteksi ini menggunakan model simulasi. Ganti dengan model nyata untuk hasil yang lebih akurat.
+    **Catatan**: hijau: helmet. merah: no helmet. biru: rider. oranye: motorcycle
     """)
