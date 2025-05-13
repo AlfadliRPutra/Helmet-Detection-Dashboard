@@ -4,13 +4,18 @@ import cv2
 import numpy as np
 import tempfile
 from ultralytics import YOLO
-from app import model  as model_obj_det
+from ..settings import MODEL_PATH 
 
+@st.cache_resource
+def load_model():
+    model = YOLO(MODEL_PATH)  # Pastikan path-nya relatif ke root proyek
+    return model
+model=load_model()
 
 # Fungsi deteksi objek
 def obj_detect(img_path, confidence_threshold=0.3):
     img = cv2.imread(img_path)
-    results = model_obj_det(img)  # Using the loaded YOLO model to get predictions
+    results = model(img)  # Using the loaded YOLO model to get predictions
 
     boxes = results[0].boxes.xyxy
     scores = results[0].boxes.conf
