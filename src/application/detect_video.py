@@ -4,13 +4,13 @@ import numpy as np
 import time
 from ultralytics import YOLO
 
-# Load YOLO Model (gunakan model yang sudah dilatih)
+from settings import MODEL_PATH 
+
 @st.cache_resource
 def load_model():
-    model = YOLO("models/helmet_model.pt")  # Ganti dengan path model YOLO kamu
+    model = YOLO(MODEL_PATH)  # Pastikan path-nya relatif ke root proyek
     return model
-
-model = load_model()
+model=load_model()
 
 # Fungsi deteksi objek untuk 1 frame
 def detect_objects_yolo_ultralytics(frame, confidence_threshold=0.3):
