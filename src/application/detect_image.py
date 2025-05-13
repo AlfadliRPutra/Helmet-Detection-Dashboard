@@ -3,14 +3,14 @@ from PIL import Image
 import cv2
 import numpy as np
 import tempfile
-from ultralytics import YOLO  
-from app import model
+from ultralytics import YOLO
+from app import model  # Assuming model is properly initialized elsewhere
 
 
 # Fungsi deteksi objek
 def obj_detect(img_path, confidence_threshold=0.3):
     img = cv2.imread(img_path)
-    results = model(img)
+    results = model(img)  # Using the loaded YOLO model to get predictions
 
     boxes = results[0].boxes.xyxy
     scores = results[0].boxes.conf
@@ -32,6 +32,7 @@ def obj_detect(img_path, confidence_threshold=0.3):
     detect_img = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
     return detect_img
 
+
 # Streamlit UI
 def show():
     st.markdown(
@@ -41,7 +42,7 @@ def show():
         """, unsafe_allow_html=True
     )
 
-    st.markdown("""
+    st.markdown(""" 
     Di sini, kamu dapat mengunggah gambar dan melihat hasil deteksi helm pada gambar tersebut. 
     Cukup pilih gambar dan klik **Deteksi** untuk menampilkan hasilnya.
     """)
@@ -65,10 +66,6 @@ def show():
     else:
         st.warning("Silakan unggah gambar untuk memulai deteksi.")
 
-    st.markdown("""
+    st.markdown(""" 
     **Catatan**: Deteksi ini menggunakan model YOLO yang telah dilatih. Pastikan model sudah diload dengan benar.
     """)
-
-# Jalankan fungsi Streamlit jika ini file utama
-# if __name__ == "__main__":
-#     show()
