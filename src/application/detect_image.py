@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import tempfile
 from ultralytics import YOLO
-from ..settings import MODEL_PATH 
+from settings import MODEL_PATH 
 
 @st.cache_resource
 def load_model():
