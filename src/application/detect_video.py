@@ -77,9 +77,9 @@ def show():
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        st.sidebar.markdown(f"**FPS**: {fps}")
-        st.sidebar.markdown(f"**Width**: {width}")
-        st.sidebar.markdown(f"**Height**: {height}")
+        st.markdown(f"**FPS**: {fps}")
+        st.markdown(f"**Width**: {width}")
+        st.markdown(f"**Height**: {height}")
 
         output = st.empty()
         prev_time = 0
@@ -109,7 +109,9 @@ def show():
 
     else:
         st.warning("Silakan unggah video terlebih dahulu.")
-
+    st.markdown(f"**FPS**: {fps}")
+    st.markdown(f"**Width**: {width}")
+    st.markdown(f"**Height**: {height}")
     st.markdown("""
         **Catatan**:
         - 🟢 Hijau: Helmet  

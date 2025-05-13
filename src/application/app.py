@@ -16,7 +16,9 @@ from realtime_camera_detection import show as show_realtime_camera_detection
 st.sidebar.title("📚 Menu")
 menu = st.sidebar.radio(
     "Pilih halaman:",
-    ("Home", "Model Overview", "Detect Image", "Detect Video", "Realtime Camera Detection")
+    ("Home", "Model Overview", "Detect Image", "Detect Video",
+    #  "Realtime Camera Detection"
+     )
 )
 
 
@@ -33,5 +35,5 @@ elif menu == "Detect Image":
     show_detect_image()
 elif menu == "Detect Video":
     show_detect_video()
-elif menu == "Realtime Camera Detection":
-    show_realtime_camera_detection()
+# elif menu == "Realtime Camera Detection":
+#     show_realtime_camera_detection()
