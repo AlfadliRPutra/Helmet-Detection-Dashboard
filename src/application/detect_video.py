@@ -62,39 +62,42 @@ def show():
         st.video(uploaded_video)
 
         if st.button("Deteksi Helm"):
-            with st.spinner("Memproses video, mohon tunggu..."):
-                # Simpan video sementara
-                temp_input = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-                temp_input.write(uploaded_video.read())
-                temp_input.close()
+    with st.spinner("Memproses video, mohon tunggu..."):
+        # Simpan video sementara
+        temp_input = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+        temp_input.write(uploaded_video.read())
+        temp_input.close()
 
-                cap = cv2.VideoCapture(temp_input.name)
+        cap = cv2.VideoCapture(temp_input.name)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
 
-                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                fps = cap.get(cv2.CAP_PROP_FPS)
+        temp_output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+        out = cv2.VideoWriter(
+            temp_output_path,
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            fps,
+            (width, height)
+        )
 
-                temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-                out = cv2.VideoWriter(
-                    temp_output.name,
-                    cv2.VideoWriter_fourcc(*'mp4v'),
-                    fps,
-                    (width, height)
-                )
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            processed_frame = detect_objects_in_frame(frame)
+            out.write(processed_frame)
 
-                while cap.isOpened():
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-                    processed_frame = detect_objects_in_frame(frame)
-                    out.write(processed_frame)
+        cap.release()
+        out.release()
 
-                cap.release()
-                out.release()
+        # Buka kembali file sebagai binary untuk memastikan sudah ditutup
+        with open(temp_output_path, 'rb') as f:
+            video_bytes = f.read()
 
-                st.markdown("🔍 **Hasil Deteksi Video**:")
-                st.video(temp_output.name)
-                st.success("Video selesai diproses.")
+        st.markdown("🔍 **Hasil Deteksi Video**:")
+        st.video(video_bytes)
+        st.success("Video selesai diproses.")
 
     else:
         st.warning("Silakan unggah video terlebih dahulu.")
