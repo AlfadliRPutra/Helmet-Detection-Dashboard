@@ -2,15 +2,16 @@ import streamlit as st
 import cv2
 import numpy as np
 import time
+import tempfile
 from ultralytics import YOLO
 
-from settings import MODEL_PATH 
-
+# Load YOLO Model (gunakan model yang sudah dilatih)
 @st.cache_resource
 def load_model():
-    model = YOLO(MODEL_PATH)  # Pastikan path-nya relatif ke root proyek
+    model = YOLO("models/helmet_model.pt")  # Ganti dengan path model YOLO kamu
     return model
-model=load_model()
+
+model = load_model()
 
 # Fungsi deteksi objek untuk 1 frame
 def detect_objects_yolo_ultralytics(frame, confidence_threshold=0.3):
@@ -42,9 +43,11 @@ def video_input():
     vid_file = None
     vid_bytes = st.file_uploader("Upload a video", type=['mp4', 'avi', 'mov'])
     if vid_bytes:
-        vid_file = "data/uploaded_data/upload." + vid_bytes.name.split('.')[-1]
-        with open(vid_file, 'wb') as out:
-            out.write(vid_bytes.read())
+        # Menggunakan tempfile untuk menyimpan file video sementara
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_file:
+            vid_file = temp_file.name
+            with open(vid_file, 'wb') as out:
+                out.write(vid_bytes.read())
     
     return vid_file
 
@@ -113,4 +116,3 @@ def show():
         - 🔵 Biru: Rider  
         - 🟠 Oranye: Motorcycle  
     """)
-
