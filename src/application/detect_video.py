@@ -4,6 +4,7 @@ import numpy as np
 import time
 import tempfile
 from ultralytics import YOLO
+from settings import MODEL_PATH 
 
 # Load YOLO Model (gunakan model yang sudah dilatih)
 @st.cache_resource
