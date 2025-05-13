@@ -1,15 +1,14 @@
 import streamlit as st
 import cv2
-import tempfile
 import numpy as np
-import os
+import time
 from ultralytics import YOLO
-from settings import MODEL_PATH
 
-# Load model YOLO
+# Load YOLO Model (gunakan model yang sudah dilatih)
 @st.cache_resource
 def load_model():
-    return YOLO(MODEL_PATH)
+    model = YOLO("models/helmet_model.pt")  # Ganti dengan path model YOLO kamu
+    return model
 
 model = load_model()
 
@@ -38,6 +37,17 @@ def detect_objects_yolo_ultralytics(frame, confidence_threshold=0.3):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
     return frame
 
+# Fungsi untuk input video (unggah atau sample video)
+def video_input():
+    vid_file = None
+    vid_bytes = st.file_uploader("Upload a video", type=['mp4', 'avi', 'mov'])
+    if vid_bytes:
+        vid_file = "data/uploaded_data/upload." + vid_bytes.name.split('.')[-1]
+        with open(vid_file, 'wb') as out:
+            out.write(vid_bytes.read())
+    
+    return vid_file
+
 # Fungsi utama untuk halaman Streamlit
 def show():
     st.markdown("""
@@ -49,70 +59,49 @@ def show():
         Unggah video dan klik **Deteksi** untuk memproses helm di tiap frame video.
     """)
 
-    st.subheader("📤 Unggah Video")
-    uploaded_video = st.file_uploader("Pilih video", type=["mp4", "mov", "avi"])
+    # Pilih video
+    uploaded_video = video_input()
 
     if uploaded_video is not None:
         st.video(uploaded_video)
 
-        if st.button("Deteksi Helm"):
-            with st.spinner("Memproses video, mohon tunggu..."):
-                # Simpan video input sementara
-                input_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-                input_temp.write(uploaded_video.read())
-                input_path = input_temp.name
-                input_temp.close()
+        # Menampilkan video
+        cap = cv2.VideoCapture(uploaded_video)
 
-                st.info(f"📥 Input video disimpan sementara di: `{input_path}`")
+        # Mendapatkan FPS dan ukuran video
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-                cap = cv2.VideoCapture(input_path)
-                if not cap.isOpened():
-                    st.error("❌ Gagal membuka video input. Format mungkin tidak didukung.")
-                    return
+        st.sidebar.markdown(f"**FPS**: {fps}")
+        st.sidebar.markdown(f"**Width**: {width}")
+        st.sidebar.markdown(f"**Height**: {height}")
 
-                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                fps = cap.get(cv2.CAP_PROP_FPS)
+        output = st.empty()
+        prev_time = 0
+        curr_time = 0
 
-                st.write(f"📏 Ukuran: {width}x{height}, 🎞️ FPS: {fps}")
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                st.write("Can't read frame, stream ended? Exiting ....")
+                break
 
-                # Output video
-                output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-                out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+            # Convert frame to RGB (OpenCV uses BGR by default)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                if not out.isOpened():
-                    st.error("❌ VideoWriter gagal dibuka. Cek codec ('mp4v') dan dimensi.")
-                    return
+            # Deteksi objek (helm) pada frame
+            output_img = detect_objects_yolo_ultralytics(frame)
 
-                frame_count = 0
-                while cap.isOpened():
-                    ret, frame = cap.read()
-                    if not ret:
-                        st.warning(f"🚫 Gagal membaca frame ke-{frame_count}. Stop.")
-                        break
+            # Tampilkan hasil frame
+            output.image(output_img)
 
-                    processed_frame = detect_objects_yolo_ultralytics(frame)
-                    out.write(processed_frame)
-                    frame_count += 1
+            # Update FPS
+            curr_time = time.time()
+            fps = 1 / (curr_time - prev_time)
+            prev_time = curr_time
 
-                cap.release()
-                out.release()
-
-                st.info(f"✅ Total frame yang diproses: {frame_count}")
-
-                # Debug: cek file output
-                if not os.path.exists(output_path):
-                    st.error("❌ Gagal menyimpan video hasil. File tidak ditemukan.")
-                else:
-                    size = os.path.getsize(output_path)
-                    if size == 0:
-                        st.error("❌ File video hasil kosong (size = 0 bytes).")
-                    else:
-                        st.success(f"✅ Video berhasil disimpan. Ukuran: {round(size / 1024 / 1024, 2)} MB")
-                        st.markdown("🔍 **Hasil Deteksi Video**:")
-                        with open(output_path, 'rb') as result_video:
-                            video_bytes = result_video.read()
-                            st.video(video_bytes)
+        cap.release()
 
     else:
         st.warning("Silakan unggah video terlebih dahulu.")
@@ -124,3 +113,4 @@ def show():
         - 🔵 Biru: Rider  
         - 🟠 Oranye: Motorcycle  
     """)
+
