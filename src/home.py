@@ -78,10 +78,6 @@ def show():
         st.markdown("""
         <div class="card">
         
-            <div class="card-header">🎦 fitur lainnya</div>
-            <div>fitur lainnya</div>
-            # <div class="card-header">🎦 Realtime Camera Detection</div>
-            # <div>Gunakan webcam untuk mendeteksi helm secara real-time.</div>
         </div>
         """, unsafe_allow_html=True)
 

@@ -7,33 +7,25 @@ from home import show as show_home
 from model_overview import show as show_model_overview
 from detect_image import show as show_detect_image
 from detect_video import show as show_detect_video
-from realtime_camera_detection import show as show_realtime_camera_detection
-
-
-
 
 # Sidebar
 st.sidebar.title("📚 Menu")
 menu = st.sidebar.radio(
     "Pilih halaman:",
-    ("Home", "Model Overview", "Detect Image", "Detect Video",
-    #  "Realtime Camera Detection"
-     )
+    (
+        "🏠 Home",          # Icon rumah
+        "🧠 Model Overview", # Icon otak
+        "🖼️ Detect Image",   # Icon gambar
+        "🎥 Detect Video"    # Icon kamera video
+    )
 )
 
-
-
-
-
 # Routing ke setiap menu
-
-if menu == "Model Overview":
+if menu == "🧠 Model Overview":
     show_model_overview()
-elif menu == "Home":
+elif menu == "🏠 Home":
     show_home()
-elif menu == "Detect Image":
+elif menu == "🖼️ Detect Image":
     show_detect_image()
-elif menu == "Detect Video":
+elif menu == "🎥 Detect Video":
     show_detect_video()
-# elif menu == "Realtime Camera Detection":
-#     show_realtime_camera_detection()

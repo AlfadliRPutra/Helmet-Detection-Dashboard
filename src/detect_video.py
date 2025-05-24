@@ -109,9 +109,6 @@ def show():
 
     else:
         st.warning("Silakan unggah video terlebih dahulu.")
-    st.markdown(f"**FPS**: {fps}")
-    st.markdown(f"**Width**: {width}")
-    st.markdown(f"**Height**: {height}")
     st.markdown("""
         **Catatan**:
         - 🟢 Hijau: Helmet  
