@@ -26,7 +26,7 @@ def obj_detect(img_path, confidence_threshold=0.3):
 
     # Mapping warna berdasarkan class ID
     class_colors = {
-        0: (0, 165, 255)    # Oranye - Motorcycle (warna BGR: Orange)
+        0: (0, 165, 255),    # Oranye - Motorcycle (warna BGR: Orange)
         1: (255, 0, 0),     # Biru - Rider
         2: (0, 255, 0),     # Hijau - Helmet
         3: (0, 0, 255),     # Merah - No Helmet
