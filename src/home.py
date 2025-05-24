@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 
 def show():
     st.markdown(
@@ -32,7 +32,6 @@ def show():
             🚀 Welcome to the Helmet Detection Dashboard
         </div>
         <hr style="margin-top: 5px; margin-bottom: 30px;">
-
         """, unsafe_allow_html=True
     )
 
@@ -44,7 +43,7 @@ def show():
     </div>
     """, unsafe_allow_html=True)
 
-    # Kartu Menu dengan emoji dan ikon
+    # Baris pertama: dua kolom
     col1, col2 = st.columns(2)
 
     with col1:
@@ -63,23 +62,15 @@ def show():
         </div>
         """, unsafe_allow_html=True)
 
-    # Kartu Menu tambahan
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("""
-        <div class="card">
-            <div class="card-header">🎥 Detect Video</div>
-            <div>Unggah video untuk deteksi helm pada setiap frame.</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("""
-        <div class="card">
-        
-        </div>
-        """, unsafe_allow_html=True)
+    # Baris kedua: satu kolom di tengah
+    st.markdown("""<div style='display: flex; justify-content: center;'>""", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="card" style="width: 60%;">
+        <div class="card-header">🎥 Detect Video</div>
+        <div>Unggah video untuk deteksi helm pada setiap frame.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Footer dengan tombol navigasi atau info lebih lanjut
     st.markdown("""
