@@ -26,10 +26,10 @@ def obj_detect(img_path, confidence_threshold=0.3):
 
     # Mapping warna berdasarkan class ID
     class_colors = {
-        0: (0, 255, 0),     # Hijau - Helmet
-        1: (0, 0, 255),     # Merah - No Helmet
-        2: (255, 0, 0),     # Biru - Rider
-        3: (0, 165, 255)    # Oranye - Motorcycle (warna BGR: Orange)
+        0: (0, 165, 255)    # Oranye - Motorcycle (warna BGR: Orange)
+        1: (255, 0, 0),     # Biru - Rider
+        2: (0, 255, 0),     # Hijau - Helmet
+        3: (0, 0, 255),     # Merah - No Helmet
     }
 
     for i in range(len(scores)):
@@ -40,10 +40,10 @@ def obj_detect(img_path, confidence_threshold=0.3):
 
             x_min, y_min, x_max, y_max = map(int, box)
             color = class_colors.get(class_id, (255, 255, 255))  # Default putih jika class_id tidak dikenali
-            cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), color, 2)
+            cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), color, 1)
 
             label = f'{score:.2f}'
-            cv2.putText(detect_img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            cv2.putText(detect_img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
 
     detect_img = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
     return detect_img
@@ -84,6 +84,10 @@ def show():
         st.warning("Silakan unggah gambar untuk memulai deteksi.")
 
     st.markdown(""" 
-    **Catatan**: hijau: helmet.  merah:no helmet, biru:rider, orange: motorcycle
+    **Catatan**:
+        - 🟢 Hijau: Helmet  
+        - 🔴 Merah: No Helmet  
+        - 🔵 Biru: Rider  
+        - 🟠 Oranye: Motorcycle  
     """)
 
