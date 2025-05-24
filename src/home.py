@@ -38,23 +38,23 @@ def show():
     # Deskripsi singkat
     st.markdown("""
     <div class="description-text">
-    Selamat datang di aplikasi **Helmet Detection**!  
-    Dashboard ini memungkinkan kamu untuk mengakses beberapa fitur canggih, termasuk:
+    Selamat datang di aplikasi Helmet Detection!  
+    Dashboard ini memungkinkan kamu untuk mengakses beberapa fitur, Yaitu:
     </div>
     """, unsafe_allow_html=True)
 
-    # Baris pertama: dua kolom
+    # Baris 1: 1 kartu penuh
+    st.markdown("""
+    <div class="card">
+        <div class="card-header">📊 Model Overview</div>
+        <div>Ringkasan performa model deteksi helm, termasuk metrik dan visualisasi.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Baris 2: 2 kolom
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("""
-        <div class="card">
-            <div class="card-header">📊 Model Overview</div>
-            <div>Ringkasan performa model deteksi helm, termasuk metrik dan visualisasi.</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
         st.markdown("""
         <div class="card">
             <div class="card-header">🖼️ Detect Image</div>
@@ -62,15 +62,13 @@ def show():
         </div>
         """, unsafe_allow_html=True)
 
-    # Baris kedua: satu kolom di tengah
-    st.markdown("""<div style='display: flex; justify-content: center;'>""", unsafe_allow_html=True)
-    st.markdown("""
-    <div class="card" style="width: 60%;">
-        <div class="card-header">🎥 Detect Video</div>
-        <div>Unggah video untuk deteksi helm pada setiap frame.</div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div class="card">
+            <div class="card-header">🎥 Detect Video</div>
+            <div>Unggah video untuk deteksi helm pada setiap frame.</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Footer dengan tombol navigasi atau info lebih lanjut
     st.markdown("""
