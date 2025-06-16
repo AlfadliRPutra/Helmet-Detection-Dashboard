@@ -51,7 +51,7 @@ def obj_detect_video(frame_bgr, confidence_threshold=0.4):
     return frame_bgr
 
 # --- FUNGSI UTAMA UNTUK UI VIDEO (LOGIKA DIPERBARUI) ---
-def show_video_page():
+def show():
     st.markdown(
         "<h2 style='text-align: center;'>📹 Deteksi Helm pada Video</h2><hr>", 
         unsafe_allow_html=True
