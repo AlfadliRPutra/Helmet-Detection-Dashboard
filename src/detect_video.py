@@ -1,118 +1,147 @@
 import streamlit as st
+from PIL import Image
 import cv2
 import numpy as np
-import time
 import tempfile
 from ultralytics import YOLO
-from settings import MODEL_PATH 
+from settings import MODEL_PATH
+import time # Untuk mengukur waktu
 
-# Load YOLO Model (gunakan model yang sudah dilatih)
+# --- Bagian ini tetap sama ---
 @st.cache_resource
 def load_model():
-    model = YOLO(MODEL_PATH)  # Pastikan path-nya relatif ke root proyek
+    """Memuat model YOLO dari path yang ditentukan."""
+    model = YOLO(MODEL_PATH)
     return model
-model=load_model()
 
+model = load_model()
 
-# Fungsi deteksi objek untuk 1 frame
-def detect_objects_yolo_ultralytics(frame, confidence_threshold=0.3):
-    results = model(frame)
+CLASS_NAMES = {
+    0: 'Motorcycle', 1: 'Rider', 2: 'Helmet', 3: 'No Helmet'
+}
+CLASS_COLORS = {
+    0: (0, 165, 255),    # Oranye
+    1: (255, 0, 0),      # Biru
+    2: (0, 255, 0),      # Hijau
+    3: (0, 0, 255),      # Merah
+}
+
+# Fungsi deteksi ini sedikit diubah agar menerima dan mengembalikan frame BGR
+def obj_detect_video(frame_bgr, confidence_threshold=0.4):
+    """
+    Fungsi deteksi yang dioptimalkan untuk frame video (input BGR, output BGR).
+    """
+    results = model(frame_bgr)
+    
     boxes = results[0].boxes.xyxy
     scores = results[0].boxes.conf
     class_ids = results[0].boxes.cls
 
-    class_colors = {
-        0: (0, 255, 0),     # Helmet - Hijau
-        1: (0, 0, 255),     # No Helmet - Merah
-        2: (255, 0, 0),     # Rider - Biru
-        3: (0, 165, 255)    # Motorcycle - Oranye (BGR)
-    }
-
+    # Tidak perlu membuat copy karena kita akan menggambar langsung di frame
     for i in range(len(scores)):
         if scores[i] > confidence_threshold:
-            x1, y1, x2, y2 = map(int, boxes[i])
-            conf = scores[i].item()
-            cls_id = int(class_ids[i].item())
-            color = class_colors.get(cls_id, (255, 255, 255))
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(frame, f'{conf:.2f}', (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-    return frame
+            box = boxes[i].tolist()
+            score = scores[i].item()
+            class_id = int(class_ids[i].item())
 
-# Fungsi untuk input video (unggah atau sample video)
-def video_input():
-    vid_file = None
-    vid_bytes = st.file_uploader("Upload a video", type=['mp4', 'avi', 'mov'])
-    if vid_bytes:
-        # Menggunakan tempfile untuk menyimpan file video sementara
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_file:
-            vid_file = temp_file.name
-            with open(vid_file, 'wb') as out:
-                out.write(vid_bytes.read())
-    
-    return vid_file
+            x_min, y_min, x_max, y_max = map(int, box)
+            
+            color = CLASS_COLORS.get(class_id, (255, 255, 255))
+            class_name = CLASS_NAMES.get(class_id, "Unknown")
+            
+            cv2.rectangle(frame_bgr, (x_min, y_min), (x_max, y_max), color, 2)
+            label = f'{class_name}: {score:.2f}'
+            cv2.putText(frame_bgr, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-# Fungsi utama untuk halaman Streamlit
+    return frame_bgr
+
+# --- FUNGSI UTAMA UNTUK UI VIDEO ---
 def show():
-    st.markdown("""
-        <h2 style='text-align: center;'>🎥 Deteksi Helm pada Video</h2>
-        <hr style="margin-top: 5px; margin-bottom: 30px;">
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-        Unggah video dan klik **Deteksi** untuk memproses helm di tiap frame video.
+    st.markdown(
+        "<h2 style='text-align: center;'>📹 Deteksi Helm pada Video</h2><hr>", 
+        unsafe_allow_html=True
+    )
+    st.info("""
+    Unggah file video (`.mp4`, `.mov`, `.avi`). Proses ini akan memakan waktu tergantung pada durasi video dan kekuatan CPU/GPU Anda.
     """)
 
-    # Pilih video
-    uploaded_video = video_input()
+    uploaded_video = st.file_uploader("Pilih file video...", type=["mp4", "mov", "avi"])
 
     if uploaded_video is not None:
-        st.video(uploaded_video)
+        # Gunakan tempfile untuk menyimpan video yang diunggah agar bisa dibaca OpenCV
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+        tfile.write(uploaded_video.read())
+        
+        st.video(tfile.name) # Tampilkan video asli
 
-        # Menampilkan video
-        cap = cv2.VideoCapture(uploaded_video)
+        if st.button("🚀 Mulai Deteksi pada Video"):
+            # Placeholder untuk video hasil
+            output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
 
-        # Mendapatkan FPS dan ukuran video
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            try:
+                # Buka video sumber
+                cap = cv2.VideoCapture(tfile.name)
+                
+                # Dapatkan properti video untuk VideoWriter
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                fps = int(cap.get(cv2.CAP_PROP_FPS))
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        st.markdown(f"**FPS**: {fps}")
-        st.markdown(f"**Width**: {width}")
-        st.markdown(f"**Height**: {height}")
+                # Buat objek VideoWriter untuk menyimpan hasil
+                out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+                
+                # UI untuk progress
+                st.subheader("⚙️ Sedang Memproses...")
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                start_time = time.time()
 
-        output = st.empty()
-        prev_time = 0
-        curr_time = 0
+                frame_count = 0
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    # Proses frame dengan fungsi deteksi
+                    processed_frame = obj_detect_video(frame)
+                    
+                    # Tulis frame yang sudah diproses ke file output
+                    out.write(processed_frame)
+                    
+                    frame_count += 1
+                    progress = frame_count / total_frames
+                    
+                    # Update progress bar dan status
+                    progress_bar.progress(progress)
+                    elapsed_time = time.time() - start_time
+                    eta = (elapsed_time / frame_count) * (total_frames - frame_count)
+                    status_text.text(f"Frame {frame_count}/{total_frames} | ETA: {int(eta)} detik")
 
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                st.write("Can't read frame, stream ended? Exiting ....")
-                break
+                # Tutup semuanya
+                cap.release()
+                out.release()
+                
+                progress_bar.empty()
+                status_text.empty()
+                st.success("🎉 Video berhasil diproses!")
+                
+                # Tampilkan video hasil
+                st.video(output_video_path)
+                
+                # Berikan tombol download
+                with open(output_video_path, "rb") as file:
+                    st.download_button(
+                        label="📥 Unduh Video Hasil",
+                        data=file,
+                        file_name=f"hasil_{uploaded_video.name}",
+                        mime="video/mp4"
+                    )
 
-            # Convert frame to RGB (OpenCV uses BGR by default)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            finally:
+                # Pastikan file sementara dihapus
+                import os
+                os.remove(tfile.name)
+                # Jangan hapus output_video_path sampai setelah diunduh/ditampilkan
 
-            # Deteksi objek (helm) pada frame
-            output_img = detect_objects_yolo_ultralytics(frame)
-
-            # Tampilkan hasil frame
-            output.image(output_img)
-
-            # Update FPS
-            curr_time = time.time()
-            fps = 1 / (curr_time - prev_time)
-            prev_time = curr_time
-
-        cap.release()
-
-    else:
-        st.warning("Silakan unggah video terlebih dahulu.")
-    st.markdown("""
-        **Catatan**:
-        - 🟢 Hijau: Helmet  
-        - 🔴 Merah: No Helmet  
-        - 🔵 Biru: Rider  
-        - 🟠 Oranye: Motorcycle  
-    """)
