@@ -2,35 +2,51 @@ import streamlit as st
 from PIL import Image
 import cv2
 import numpy as np
-import tempfile
+# Hapus tempfile karena tidak lagi digunakan
 from ultralytics import YOLO
+# Pastikan file settings.py dan path model sudah benar
 from settings import MODEL_PATH 
 
+# Muat model sekali menggunakan cache Streamlit
 @st.cache_resource
 def load_model():
-    model = YOLO(MODEL_PATH)  # Pastikan path-nya relatif ke root proyek
+    """Memuat model YOLO dari path yang ditentukan."""
+    model = YOLO(MODEL_PATH)
     return model
-model=load_model()
 
+model = load_model()
 
-# Fungsi deteksi objek yang telah dimodifikasi
-def obj_detect(img_path, confidence_threshold=0.3):
-    img = cv2.imread(img_path)
-    results = model(img)  # Menggunakan model YOLO yang telah dimuat
+# Definisikan nama kelas dan warna untuk konsistensi
+CLASS_NAMES = {
+    0: 'Motorcycle', 1: 'Rider', 2: 'Helmet', 3: 'No Helmet'
+}
+CLASS_COLORS = {
+    0: (0, 165, 255),    # Oranye - Motorcycle
+    1: (255, 0, 0),      # Biru   - Rider
+    2: (0, 255, 0),      # Hijau  - Helmet
+    3: (0, 0, 255),      # Merah  - No Helmet
+}
+
+def obj_detect(image_pil, confidence_threshold=0.4):
+    """
+    Fungsi untuk melakukan deteksi objek pada gambar.
+    Inputnya adalah objek gambar PIL, bukan path file.
+    """
+    # 1. Konversi gambar PIL ke array NumPy (format RGB)
+    image_np = np.array(image_pil)
+    
+    # 2. Konversi dari RGB ke BGR karena OpenCV menggunakan BGR
+    img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+    # Lakukan deteksi dengan model YOLO
+    results = model(img_bgr)
 
     boxes = results[0].boxes.xyxy
     scores = results[0].boxes.conf
     class_ids = results[0].boxes.cls
 
-    detect_img = img.copy()
-
-    # Mapping warna berdasarkan class ID
-    class_colors = {
-        0: (0, 165, 255),    # Oranye - Motorcycle (warna BGR: Orange)
-        1: (255, 0, 0),     # Biru - Rider
-        2: (0, 255, 0),     # Hijau - Helmet
-        3: (0, 0, 255),     # Merah - No Helmet
-    }
+    # Salin gambar untuk digambari bounding box
+    detect_img = img_bgr.copy()
 
     for i in range(len(scores)):
         if scores[i] > confidence_threshold:
@@ -39,16 +55,25 @@ def obj_detect(img_path, confidence_threshold=0.3):
             class_id = int(class_ids[i].item())
 
             x_min, y_min, x_max, y_max = map(int, box)
-            color = class_colors.get(class_id, (255, 255, 255))  # Default putih jika class_id tidak dikenali
-            cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), color, 1)
+            
+            # Ambil warna dan nama kelas, default jika tidak ada
+            color = CLASS_COLORS.get(class_id, (255, 255, 255)) # Default Putih
+            class_name = CLASS_NAMES.get(class_id, "Unknown")
+            
+            # Gambar kotak
+            cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), color, 2)
 
-            label = f'{score:.2f}'
-            cv2.putText(detect_img, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
+            # Buat label dengan nama kelas dan skor kepercayaan
+            label = f'{class_name}: {score:.2f}'
+            
+            # Atur posisi dan gambar teks label
+            label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+            cv2.rectangle(detect_img, (x_min, y_min - label_size[1] - 10), (x_min + label_size[0], y_min - 10), color, cv2.FILLED)
+            cv2.putText(detect_img, label, (x_min, y_min - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-    detect_img = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
-    return detect_img
-
-
+    # Konversi kembali dari BGR ke RGB untuk ditampilkan di Streamlit
+    detect_img_rgb = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
+    return detect_img_rgb
 
 # Streamlit UI
 def show():
@@ -58,36 +83,40 @@ def show():
         <hr style="margin-top: 5px; margin-bottom: 30px;">
         """, unsafe_allow_html=True
     )
-
     st.markdown(""" 
-    Di sini, kamu dapat mengunggah gambar dan melihat hasil deteksi helm pada gambar tersebut. 
-    Cukup pilih gambar dan klik **Deteksi** untuk menampilkan hasilnya.
+    Unggah gambar untuk mendeteksi pengendara motor, helm, atau tidak berhelm. 
+    Klik tombol **Deteksi Helm** untuk melihat hasilnya.
     """)
 
     st.subheader("📤 Unggah Gambar untuk Deteksi")
-    uploaded_image = st.file_uploader("Pilih gambar", type=["jpg", "jpeg", "png"])
+    uploaded_image = st.file_uploader("Pilih gambar...", type=["jpg", "jpeg", "png"])
 
     if uploaded_image is not None:
+        # Buka gambar menggunakan PIL
         image = Image.open(uploaded_image)
-        st.image(image, caption="Gambar yang Diupload", use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(image, caption="Gambar Asli", use_container_width=True)
 
-        if st.button("Deteksi Helm"):
-            with st.spinner("Memproses gambar..."):
-                # Simpan gambar sementara untuk dibaca OpenCV
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
-                    image.save(temp_file.name)
-                    result_image = obj_detect(temp_file.name)
-
-                st.markdown("🔍 **Hasil Deteksi**:")
-                st.image(result_image, caption="Hasil Deteksi", use_container_width=True)
+        if st.button("✨ Deteksi Helm"):
+            with st.spinner("🧠 Menganalisis gambar..."):
+                # Panggil fungsi deteksi dengan objek gambar PIL
+                result_image = obj_detect(image)
+                
+                with col2:
+                    st.image(result_image, caption="Hasil Deteksi", use_container_width=True)
     else:
-        st.warning("Silakan unggah gambar untuk memulai deteksi.")
+        st.info("ℹ️ Silakan unggah gambar untuk memulai deteksi.")
 
+    st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown(""" 
-    **Catatan**:
-        - 🟢 Hijau: Helmet  
-        - 🔴 Merah: No Helmet  
-        - 🔵 Biru: Rider  
-        - 🟠 Oranye: Motorcycle  
-    """)
+    **Legenda Warna:**
+    - <span style='color:green;'>■</span> **Hijau**: Helmet
+    - <span style='color:red;'>■</span> **Merah**: No Helmet
+    - <span style='color:blue;'>■</span> **Biru**: Rider
+    - <span style='color:orange;'>■</span> **Oranye**: Motorcycle
+    """, unsafe_allow_html=True)
 
+# Panggil fungsi utama untuk menjalankan UI
+# show()
