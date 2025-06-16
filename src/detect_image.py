@@ -18,14 +18,19 @@ model = load_model()
 
 # Definisikan nama kelas dan warna untuk konsistensi
 CLASS_NAMES = {
-    0: 'Motorcycle', 1: 'Rider', 2: 'Helmet', 3: 'No Helmet'
+    0: 'Helmet',
+    1: 'Motorcycle',
+    2: 'No Helmet',
+    3: 'Rider'
 }
+
 CLASS_COLORS = {
-    0: (0, 165, 255),    # Oranye - Motorcycle
-    1: (255, 0, 0),      # Biru   - Rider
-    2: (0, 255, 0),      # Hijau  - Helmet
-    3: (0, 0, 255),      # Merah  - No Helmet
+    0: (0, 255, 0),      # Hijau  - Helmet
+    1: (0, 165, 255),    # Oranye - Motorcycle
+    2: (0, 0, 255),      # Merah  - No Helmet
+    3: (255, 0, 0)       # Biru   - Rider
 }
+
 
 def obj_detect(image_pil, confidence_threshold=0.4):
     """
