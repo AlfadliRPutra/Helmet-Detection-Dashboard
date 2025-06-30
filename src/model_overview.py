@@ -30,7 +30,7 @@ def show():
     # Training curve (online image)
     st.subheader("📉 Training Loss Curve")
     st.image(
-        "../assets/images/loss_plot.png",
+        "assets/images/loss_plot.png",
         caption="Loss Model",
         use_container_width=True
     )
@@ -38,7 +38,7 @@ def show():
     # Confusion matrix (online image)
     st.subheader("🧮 Confusion Matrix")
     st.image(
-       "../assets/images/loss_plot.png",
+       "assets/images/loss_plot.png",
         caption="Confusion Matrix",
         use_container_width=True
     )
