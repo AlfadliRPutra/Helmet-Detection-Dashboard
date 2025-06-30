@@ -19,10 +19,10 @@ def overlaps(boxA, boxB):
 def show():
     st.title("🚦 Deteksi Pelanggaran Helm dengan Tracking")
 
-    uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4", "mov", "avi"])
+    uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4"])
 
     if uploaded_video:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
         tfile.write(uploaded_video.read())
         input_path = tfile.name
         output_path = input_path.replace(".mp4", "_output.mp4")
