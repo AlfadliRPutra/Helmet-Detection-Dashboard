@@ -12,43 +12,35 @@ def show():
     st.subheader("🧠 Model Info")
     col1, col2 = st.columns(2)
     with col1:
-        st.write("**Model:** YOLOv5s")
-        st.write("**Ukuran:** 14.5 MB")
-        st.write("**Parameter:** 7.2M")
+        st.write("**Model:** YOLO11")
+        st.write("**Ukuran:** 5.4 MB")
+        st.write("**Parameter:** 2.5 M")
     with col2:
-        st.write("**Dataset:** Custom Helmet Dataset (COCO-style)")
-        st.write("**Epoch:** 100")
-        st.write("**Optimizer:** Adam")
+        st.write("**Dataset:** CCTV ATCS Samarinda & Phone Camera")
+        st.write("**Epoch:** 50")
+        st.write("**Optimizer:** Stochastic Gradient Descent")
 
     # Metrics
     st.subheader("📈 Performance Metrics")
     col1, col2, col3 = st.columns(3)
-    col1.metric("mAP@0.5", "0.86")
-    col2.metric("Precision", "0.89")
-    col3.metric("Recall", "0.84")
+    col1.metric("mAP@0.5", "0.97")
+    col2.metric("Precision", "0.95")
+    col3.metric("Recall", "0.97")
 
     # Training curve (online image)
     st.subheader("📉 Training Loss Curve")
     st.image(
-        "https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg",
-        caption="Training loss vs Epoch",
+        "../assets/images/loss_plot.png",
+        caption="Loss Model",
         use_container_width=True
     )
 
     # Confusion matrix (online image)
     st.subheader("🧮 Confusion Matrix")
     st.image(
-       "https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg",
+       "../assets/images/loss_plot.png",
         caption="Confusion Matrix",
         use_container_width=True
     )
 
-    # Prediksi contoh (online image)
-    st.subheader("🖼️ Contoh Prediksi")
-    st.image(
-        "https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg",
-        caption="Contoh deteksi helm (simulasi)",
-        use_container_width=True
-    )
-
-    st.info("Catatan: Model dilatih menggunakan 5000 gambar pelatihan dan 1000 gambar validasi.")
+    

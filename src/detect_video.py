@@ -29,7 +29,15 @@ def convert_video_for_streamlit(input_path, output_path):
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def show():
-    st.title("🚦 Deteksi Pelanggaran Helm dengan Tracking")
+    st.markdown(
+        """
+        <h2 style='text-align: center;'>🎥 Deteksi Video</h2>
+        <hr style="margin-top: 5px; margin-bottom: 30px;">
+        """, unsafe_allow_html=True
+    )
+    st.markdown(""" 
+    Unggah video untuk mendeteksi pengendara motor, helm, atau tanpa helm. 
+        """)
 
     uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4"])
 
@@ -156,3 +164,12 @@ def show():
                     st.image(img_path, caption=os.path.basename(img_path), use_container_width=True)
         else:
             st.info("👍 Tidak ada pelanggaran yang terdeteksi.")
+            
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown(""" 
+    **Keterangan:**
+    - <span style='color:green;'>■</span> **Hijau**: Helmet
+    - <span style='color:red;'>■</span> **Merah**: No Helmet
+    - <span style='color:blue;'>■</span> **Biru**: Rider
+    - <span style='color:orange;'>■</span> **Oranye**: Motorcycle
+    """, unsafe_allow_html=True)

@@ -84,7 +84,7 @@ def obj_detect(image_pil, confidence_threshold=0.4):
 def show():
     st.markdown(
         """
-        <h2 style='text-align: center;'>🖼️ Deteksi Helm pada Gambar</h2>
+        <h2 style='text-align: center;'>🖼️ Deteksi Gambar</h2>
         <hr style="margin-top: 5px; margin-bottom: 30px;">
         """, unsafe_allow_html=True
     )
@@ -116,7 +116,7 @@ def show():
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown(""" 
-    **Legenda Warna:**
+    **Keterangan:**
     - <span style='color:green;'>■</span> **Hijau**: Helmet
     - <span style='color:red;'>■</span> **Merah**: No Helmet
     - <span style='color:blue;'>■</span> **Biru**: Rider
