@@ -76,7 +76,7 @@ def obj_detect(image_pil, confidence_threshold=0.4):
             label = f'{class_name}: {score:.2f}'
             
             # Atur posisi dan gambar teks label
-            label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+            # label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
             cv2.rectangle(detect_img, (x_min, y_min - label_size[1] - 10), (x_min + label_size[0], y_min - 10), color, cv2.FILLED)
             # cv2.putText(detect_img, label, (x_min, y_min - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
@@ -103,17 +103,14 @@ def show():
         # Buka gambar menggunakan PIL
         image = Image.open(uploaded_image)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(image, caption="Gambar Asli", use_container_width=True)
+        st.image(image, caption="Gambar Asli", use_container_width=True)
 
         if st.button("✨ Deteksi Helm"):
             with st.spinner("🧠 Menganalisis gambar..."):
                 # Panggil fungsi deteksi dengan objek gambar PIL
                 result_image = obj_detect(image)
-                
-                with col2:
-                    st.image(result_image, caption="Hasil Deteksi", use_container_width=True)
+                st.image(result_image, caption="Hasil Deteksi", use_container_width=True)
+
     else:
         st.info("ℹ️ Silakan unggah gambar untuk memulai deteksi.")
 
@@ -125,6 +122,3 @@ def show():
     - <span style='color:blue;'>■</span> **Biru**: Rider
     - <span style='color:orange;'>■</span> **Oranye**: Motorcycle
     """, unsafe_allow_html=True)
-
-# Panggil fungsi utama untuk menjalankan UI
-# show()
