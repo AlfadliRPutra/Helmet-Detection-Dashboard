@@ -37,9 +37,7 @@ def show():
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
             violation_dir = tempfile.mkdtemp()
 
-            # === Load model dan tracker ===
-            model_path = '/content/drive/MyDrive/SKRIPSI/Results/V5runSGD50/train/weights/best.pt'  # Ganti sesuai kebutuhan
-            model = YOLO(model_path)
+            
             tracker = DeepSort(max_age=100, n_init=3, max_cosine_distance=0.85, nn_budget=100)
 
             cap = cv2.VideoCapture(input_path)
@@ -53,7 +51,7 @@ def show():
             st.write(f"📏 Ukuran video: {width}x{height}, FPS: {fps:.2f}, Total Frame: {total_frames}")
 
             CONF_THRESH = 0.5
-            VIOLATION_INTERVAL = 30
+            VIOLATION_INTERVAL = 10
             PADDING = 5
 
             frame_idx = 0
