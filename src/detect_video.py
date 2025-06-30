@@ -1,16 +1,18 @@
 import streamlit as st
-from PIL import Image
 import cv2
 import numpy as np
 import tempfile
+import os
+from PIL import Image
 from ultralytics import YOLO
 from settings import MODEL_PATH
-import time # Untuk mengukur waktu
+import time
+from collections import defaultdict
+from deep_sort_realtime.deepsort_tracker import DeepSort
 
-# --- Bagian ini tetap sama ---
+# ================== Load Model Sekali ==================
 @st.cache_resource
 def load_model():
-    """Memuat model YOLO dari path yang ditentukan."""
     model = YOLO(MODEL_PATH)
     return model
 
@@ -20,131 +22,144 @@ CLASS_NAMES = {
     0: 'Helmet', 1: 'Motorcycle', 2: 'No Helmet', 3: 'Rider'
 }
 CLASS_COLORS = {
-    0: (0, 255, 0),    # Oranye
-    1: (0, 165, 255) ,    # Biru
-    2: (0, 0, 255),     # Hijau
-    3: (255, 0, 0),     # Merah
+    0: (0, 255, 0),
+    1: (0, 165, 255),
+    2: (0, 0, 255),
+    3: (255, 0, 0),
 }
 
-# --- Fungsi ini tidak diubah ---
-def obj_detect_video(frame_bgr, confidence_threshold=0.4):
-    """
-    Fungsi deteksi yang dioptimalkan untuk frame video (input BGR, output BGR).
-    """
-    results = model(frame_bgr, verbose=False)
-    boxes = results[0].boxes.xyxy
-    scores = results[0].boxes.conf
-    class_ids = results[0].boxes.cls
-    for i in range(len(scores)):
-        if scores[i] > confidence_threshold:
-            box = boxes[i].tolist()
-            score = scores[i].item()
-            class_id = int(class_ids[i].item())
-            x_min, y_min, x_max, y_max = map(int, box)
-            color = CLASS_COLORS.get(class_id, (255, 255, 255))
-            class_name = CLASS_NAMES.get(class_id, "Unknown")
-            cv2.rectangle(frame_bgr, (x_min, y_min), (x_max, y_max), color, 2)
-            label = f'{class_name}: {score:.2f}'
-            (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(frame_bgr, (x_min, y_min - h - 10), (x_min + w, y_min - 5), color, -1)
-            cv2.putText(frame_bgr, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
-    return frame_bgr
+# ================== Fungsi Bantu ==================
+def overlaps(boxA, boxB):
+    ax1, ay1, ax2, ay2 = boxA
+    bx1, by1, bx2, by2 = boxB
+    return max(0, min(ax2, bx2) - max(ax1, bx1)) > 0 and max(0, min(ay2, by2) - max(ay1, by1)) > 0
 
-# --- FUNGSI UTAMA UNTUK UI VIDEO (LOGIKA DIPERBARUI) ---
+# ================== Fungsi Utama UI Streamlit ==================
 def show():
-    st.markdown(
-        "<h2 style='text-align: center;'>📹 Deteksi Helm pada Video</h2><hr>", 
-        unsafe_allow_html=True
-    )
-    st.info("""
-    Unggah file video. Deteksi akan dilakukan **setiap 1 detik** untuk mempercepat proses.
-    """)
+    st.markdown("<h2 style='text-align: center;'>📹 Deteksi Helm dengan Tracking</h2><hr>", unsafe_allow_html=True)
+    st.info("Unggah video dan deteksi akan dijalankan. Pelanggaran (tanpa helm saat berkendara) akan ditampilkan.")
 
-    uploaded_video = st.file_uploader("Pilih file video...", type=["mp4", "mov", "avi"])
-
+    uploaded_video = st.file_uploader("📁 Unggah Video...", type=["mp4", "mov", "avi"])
     if uploaded_video is not None:
         input_video_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
         with open(input_video_path, "wb") as f:
             f.write(uploaded_video.read())
-        
-        st.subheader("Video Asli")
+
+        st.subheader("🎞️ Video Asli")
         st.video(input_video_path)
 
-        if st.button("🚀 Mulai Deteksi (Setiap 1 Detik)"):
+        if st.button("🚀 Mulai Deteksi dan Tracking"):
+            cap = cv2.VideoCapture(input_video_path)
+            fps = int(cap.get(cv2.CAP_PROP_FPS) or 30)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
             output_video_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-            
-            try:
-                cap = cv2.VideoCapture(input_video_path)
-                
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                fps = int(cap.get(cv2.CAP_PROP_FPS))
-                # Menghindari pembagian dengan nol jika FPS tidak terbaca
-                if fps == 0:
-                    st.warning("Tidak dapat membaca FPS video, menggunakan default 30 FPS.")
-                    fps = 30
-                
-                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
-                out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
-                
-                st.subheader("⚙️ Sedang Memproses...")
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                start_time = time.time()
-                
-                frame_count = 0
-                last_processed_frame = None # Untuk menyimpan frame terakhir yang diproses
+            tracker = DeepSort(max_age=100, n_init=3, max_cosine_distance=0.85, nn_budget=100)
+            captured_motor_ids = {}
+            violation_images = []
 
-                while cap.isOpened():
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
+            CONFIDENCE_THRESHOLD = 0.5
+            VIOLATION_INTERVAL = 20
 
-                    # <<< PERUBAHAN LOGIKA UTAMA ADA DI SINI >>>
-                    # Hanya proses frame pertama setiap detiknya (frame ke-0, ke-fps, ke-2*fps, dst.)
-                    if frame_count % fps == 0:
-                        # Jalankan deteksi dan simpan hasilnya
-                        last_processed_frame = obj_detect_video(frame.copy())
-                        out.write(last_processed_frame)
-                    else:
-                        # Untuk frame lain, tulis hasil deteksi terakhir
-                        if last_processed_frame is not None:
-                            out.write(last_processed_frame)
-                        else:
-                            # Jika belum ada frame yang diproses, tulis frame asli
-                            out.write(frame)
-                    
-                    frame_count += 1
-                    
-                    # Update UI progress
-                    progress = frame_count / total_frames if total_frames > 0 else 0
-                    if frame_count % 5 == 0:
-                        elapsed_time = time.time() - start_time
-                        eta = ((elapsed_time / frame_count) * (total_frames - frame_count)) if frame_count > 0 else 0
-                        progress_bar.progress(progress)
-                        status_text.text(f"Frame: {frame_count}/{total_frames} | Estimasi Waktu: {int(eta)}s")
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            frame_idx = 0
+            start_time = time.time()
 
-                progress_bar.progress(1.0)
-                status_text.success("🎉 Video berhasil diproses!")
-                
-                cap.release()
-                out.release()
-                
-                st.subheader("Video Hasil Deteksi")
-                st.video(output_video_path)
-                
-                with open(output_video_path, "rb") as file:
-                    st.download_button(
-                        label="📥 Unduh Video Hasil",
-                        data=file,
-                        file_name=f"hasil_deteksi_{uploaded_video.name}",
-                        mime="video/mp4"
-                    )
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frame_idx += 1
 
-            finally:
-                if os.path.exists(input_video_path):
-                    os.remove(input_video_path)
-                if os.path.exists(output_video_path):
-                    os.remove(output_video_path)
+                results = model(frame, verbose=False)[0]
+                boxes_by_cls = defaultdict(list)
+                detections = []
+
+                for box in results.boxes:
+                    conf = float(box.conf)
+                    if conf < CONFIDENCE_THRESHOLD:
+                        continue
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    cls = int(box.cls[0])
+                    boxes_by_cls[cls].append((x1, y1, x2, y2))
+                    detections.append(([x1, y1, x2 - x1, y2 - y1], conf, cls))
+
+                tracks = tracker.update_tracks(detections, frame=frame)
+
+                for track in tracks:
+                    if not track.is_confirmed():
+                        continue
+                    cls = track.get_det_class()
+                    track_id = track.track_id
+                    x1, y1, x2, y2 = map(int, track.to_ltrb())
+                    color = CLASS_COLORS.get(cls, (255, 255, 255))
+                    label = f'ID {track_id} - {CLASS_NAMES.get(cls)}'
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+                # === Deteksi pelanggaran: No Helmet + Rider + Motorcycle ===
+                for rider_box in boxes_by_cls[3]:
+                    for no_helmet_box in boxes_by_cls[2]:
+                        if overlaps(rider_box, no_helmet_box):
+                            motor_track_id = None
+                            motor_box = None
+                            for track in tracks:
+                                if track.is_confirmed() and track.get_det_class() == 1:
+                                    tx1, ty1, tx2, ty2 = map(int, track.to_ltrb())
+                                    tracked_box = (tx1, ty1, tx2, ty2)
+                                    if overlaps(rider_box, tracked_box):
+                                        motor_track_id = track.track_id
+                                        motor_box = tracked_box
+                                        break
+                            if motor_track_id is not None and motor_box is not None:
+                                last = captured_motor_ids.get(motor_track_id, -999)
+                                if frame_idx - last >= VIOLATION_INTERVAL:
+                                    x1s = [motor_box[0], rider_box[0], no_helmet_box[0]]
+                                    y1s = [motor_box[1], rider_box[1], no_helmet_box[1]]
+                                    x2s = [motor_box[2], rider_box[2], no_helmet_box[2]]
+                                    y2s = [motor_box[3], rider_box[3], no_helmet_box[3]]
+                                    vx1, vy1 = max(min(x1s) - 5, 0), max(min(y1s) - 5, 0)
+                                    vx2, vy2 = min(max(x2s) + 5, frame.shape[1]), min(max(y2s) + 5, frame.shape[0])
+                                    crop = frame[vy1:vy2, vx1:vx2]
+                                    violation_images.append(crop)
+                                    captured_motor_ids[motor_track_id] = frame_idx
+
+                out.write(frame)
+
+                if frame_idx % 5 == 0:
+                    progress = frame_idx / total_frames if total_frames > 0 else 0
+                    progress_bar.progress(progress)
+                    elapsed = time.time() - start_time
+                    eta = ((elapsed / frame_idx) * (total_frames - frame_idx)) if frame_idx > 0 else 0
+                    status_text.text(f"Frame {frame_idx}/{total_frames} | Estimasi selesai: {int(eta)} detik")
+
+            cap.release()
+            out.release()
+
+            st.success("✅ Proses selesai!")
+            st.subheader("🎬 Video Hasil Deteksi dan Tracking")
+            st.video(output_video_path)
+
+            with open(output_video_path, "rb") as file:
+                st.download_button("📥 Unduh Video", data=file, file_name="hasil_tracking.mp4", mime="video/mp4")
+
+            if violation_images:
+                st.subheader("📸 Gambar Pelanggaran yang Terdeteksi")
+                cols = st.columns(3)
+                for idx, img in enumerate(violation_images):
+                    with cols[idx % 3]:
+                        st.image(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), caption=f"Pelanggaran #{idx+1}", use_column_width=True)
+            else:
+                st.info("👍 Tidak ada pelanggaran terdeteksi.")
+
+            # Hapus file sementara
+            if os.path.exists(input_video_path):
+                os.remove(input_video_path)
+            if os.path.exists(output_video_path):
+                os.remove(output_video_path)
+

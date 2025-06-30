@@ -1,4 +1,7 @@
 streamlit
 opencv-python
-black
 ultralytics
+Pillow
+deep_sort_realtime
+numpy
+black  # opsional
