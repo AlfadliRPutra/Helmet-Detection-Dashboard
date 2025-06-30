@@ -124,7 +124,9 @@ def show():
                                 save_path = os.path.join(violation_dir, f"motorID_{motor_track_id}.jpg")
                                 cv2.imwrite(save_path, crop)
                                 captured_motor_ids[motor_track_id] = frame_idx
-                                violation_images.append(save_path)
+                                if save_path not in violation_images:
+                                    violation_images.append(save_path)
+
 
 
             out.write(frame)
