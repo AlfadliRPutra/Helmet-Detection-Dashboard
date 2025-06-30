@@ -57,7 +57,7 @@ def show():
     with col1:
         st.markdown("""
         <div class="card">
-            <div class="card-header">🖼️ Detect Image</div>
+            <div class="card-header">🖼️ Deteksi Image</div>
             <div>Unggah gambar untuk mendeteksi helm pada foto.</div>
         </div>
         """, unsafe_allow_html=True)
@@ -65,7 +65,7 @@ def show():
     with col2:
         st.markdown("""
         <div class="card">
-            <div class="card-header">🎥 Detect Video</div>
+            <div class="card-header">🎥 Deteksi Video</div>
             <div>Unggah video untuk deteksi helm pada setiap frame.</div>
         </div>
         """, unsafe_allow_html=True)
