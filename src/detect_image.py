@@ -44,7 +44,11 @@ def obj_detect(image_pil, confidence_threshold=0.4):
     img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
     # Lakukan deteksi dengan model YOLO
-    results = model(img_bgr)
+    results = model.predict(
+        img_bgr,
+        conf=0.5,
+        iou=0.5
+    )
 
     boxes = results[0].boxes.xyxy
     scores = results[0].boxes.conf
@@ -74,7 +78,7 @@ def obj_detect(image_pil, confidence_threshold=0.4):
             # Atur posisi dan gambar teks label
             label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
             cv2.rectangle(detect_img, (x_min, y_min - label_size[1] - 10), (x_min + label_size[0], y_min - 10), color, cv2.FILLED)
-            cv2.putText(detect_img, label, (x_min, y_min - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+            # cv2.putText(detect_img, label, (x_min, y_min - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     # Konversi kembali dari BGR ke RGB untuk ditampilkan di Streamlit
     detect_img_rgb = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
@@ -89,8 +93,7 @@ def show():
         """, unsafe_allow_html=True
     )
     st.markdown(""" 
-    Unggah gambar untuk mendeteksi pengendara motor, helm, atau tidak berhelm. 
-    Klik tombol **Deteksi Helm** untuk melihat hasilnya.
+    Unggah gambar untuk mulai mendeteksi...
     """)
 
     st.subheader("📤 Unggah Gambar untuk Deteksi")

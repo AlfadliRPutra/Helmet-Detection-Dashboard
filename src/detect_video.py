@@ -36,7 +36,7 @@ def show():
         """, unsafe_allow_html=True
     )
     st.markdown(""" 
-    Unggah video untuk mendeteksi pengendara motor, helm, atau tanpa helm. 
+    Unggah video untuk mulai mendeteksi...
         """)
 
     uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4"])
@@ -164,7 +164,7 @@ def show():
                     st.image(img_path, caption=os.path.basename(img_path), use_container_width=True)
         else:
             st.info("👍 Tidak ada pelanggaran yang terdeteksi.")
-            
+
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown(""" 
     **Keterangan:**
