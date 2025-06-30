@@ -77,7 +77,7 @@ def obj_detect(image_pil, confidence_threshold=0.4):
             
             # Atur posisi dan gambar teks label
             # label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(detect_img, (x_min, y_min - label_size[1] - 10), (x_min + label_size[0], y_min - 10), color, cv2.FILLED)
+            cv2.rectangle(detect_img, (x_min + label_size[0], y_min - 10), color, cv2.FILLED)
             # cv2.putText(detect_img, label, (x_min, y_min - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     # Konversi kembali dari BGR ke RGB untuk ditampilkan di Streamlit
