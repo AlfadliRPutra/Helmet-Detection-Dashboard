@@ -148,6 +148,6 @@ def show():
             cols = st.columns(3)
             for idx, img_path in enumerate(violation_images):
                 with cols[idx % 3]:
-                    st.image(img_path, caption=os.path.basename(img_path), use_column_width=True)
+                    st.image(img_path, caption=os.path.basename(img_path), use_container_width=True)
         else:
             st.info("👍 Tidak ada pelanggaran yang terdeteksi.")
