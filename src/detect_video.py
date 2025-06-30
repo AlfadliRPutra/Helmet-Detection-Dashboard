@@ -37,9 +37,9 @@ def show():
     st.title("🚦 Deteksi Pelanggaran Helm dengan Tracking")
 
     uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4", "mov", "avi"])
-    conf_thresh = st.slider("🎯 Confidence Threshold", 0.2, 1.0, 0.5, 0.05)
-    interval = st.slider("⏱️ Interval Simpan Pelanggaran (frame)", 1, 60, 10)
-    padding = st.slider("📐 Padding Crop (px)", 0, 30, 5)
+    conf_thresh = 0.5
+    interval = 10
+    padding = 20
 
     if uploaded_video is not None:
         st.video(uploaded_video)
