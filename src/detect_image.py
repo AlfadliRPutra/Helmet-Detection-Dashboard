@@ -34,16 +34,11 @@ CLASS_COLORS = {
 
 def obj_detect(image_pil, confidence_threshold=0.4):
     """
-    Fungsi untuk melakukan deteksi objek pada gambar.
-    Inputnya adalah objek gambar PIL, bukan path file.
+    Fungsi untuk mendeteksi objek dan hanya menampilkan bounding box (tanpa label atau confidence).
     """
-    # 1. Konversi gambar PIL ke array NumPy (format RGB)
     image_np = np.array(image_pil)
-    
-    # 2. Konversi dari RGB ke BGR karena OpenCV menggunakan BGR
     img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
-    # Lakukan deteksi dengan model YOLO
     results = model.predict(
         img_bgr,
         conf=0.5,
@@ -54,33 +49,18 @@ def obj_detect(image_pil, confidence_threshold=0.4):
     scores = results[0].boxes.conf
     class_ids = results[0].boxes.cls
 
-    # Salin gambar untuk digambari bounding box
     detect_img = img_bgr.copy()
 
     for i in range(len(scores)):
         if scores[i] > confidence_threshold:
             box = boxes[i].tolist()
-            score = scores[i].item()
             class_id = int(class_ids[i].item())
 
             x_min, y_min, x_max, y_max = map(int, box)
-            
-            # Ambil warna dan nama kelas, default jika tidak ada
-            color = CLASS_COLORS.get(class_id, (255, 255, 255)) # Default Putih
-            class_name = CLASS_NAMES.get(class_id, "Unknown")
-            
-            # Gambar kotak
+
+            color = CLASS_COLORS.get(class_id, (255, 255, 255))  # Putih jika tidak dikenali
             cv2.rectangle(detect_img, (x_min, y_min), (x_max, y_max), color, 2)
 
-            # Buat label dengan nama kelas dan skor kepercayaan
-            label = f'{class_name}: {score:.2f}'
-            
-            # Atur posisi dan gambar teks label
-            label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(detect_img, (x_min + label_size[0], y_min - 10), color, cv2.FILLED)
-            # cv2.putText(detect_img, label, (x_min, y_min - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-    # Konversi kembali dari BGR ke RGB untuk ditampilkan di Streamlit
     detect_img_rgb = cv2.cvtColor(detect_img, cv2.COLOR_BGR2RGB)
     return detect_img_rgb
 
