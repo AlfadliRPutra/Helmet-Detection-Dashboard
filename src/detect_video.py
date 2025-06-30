@@ -10,8 +10,7 @@ from collections import defaultdict
 # ================== Load Model Sekali ==================
 @st.cache_resource
 def load_model():
-    model = YOLO(MODEL_PATH)
-    return model
+    return YOLO(MODEL_PATH)
 
 model = load_model()
 
@@ -21,15 +20,31 @@ def overlaps(boxA, boxB):
     bx1, by1, bx2, by2 = boxB
     return max(0, min(ax2, bx2) - max(ax1, bx1)) > 0 and max(0, min(ay2, by2) - max(ay1, by1)) > 0
 
+
+def crop_violation_area(frame, boxes, padding=5):
+    x1s = [b[0] for b in boxes]
+    y1s = [b[1] for b in boxes]
+    x2s = [b[2] for b in boxes]
+    y2s = [b[3] for b in boxes]
+    vx1 = max(0, min(x1s) - padding)
+    vy1 = max(0, min(y1s) - padding)
+    vx2 = min(frame.shape[1], max(x2s) + padding)
+    vy2 = min(frame.shape[0], max(y2s) + padding)
+    return frame[vy1:vy2, vx1:vx2]
+
+
 def show():
     st.title("🚦 Deteksi Pelanggaran Helm dengan Tracking")
 
     uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4", "mov", "avi"])
+    conf_thresh = st.slider("🎯 Confidence Threshold", 0.2, 1.0, 0.5, 0.05)
+    interval = st.slider("⏱️ Interval Simpan Pelanggaran (frame)", 1, 60, 10)
+    padding = st.slider("📐 Padding Crop (px)", 0, 30, 5)
+
     if uploaded_video is not None:
         st.video(uploaded_video)
 
         if st.button("🚀 Jalankan Deteksi"):
-            # === Simpan video ke file sementara ===
             input_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
             input_temp.write(uploaded_video.read())
             input_path = input_temp.name
@@ -37,7 +52,6 @@ def show():
             output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
             violation_dir = tempfile.mkdtemp()
 
-            
             tracker = DeepSort(max_age=100, n_init=3, max_cosine_distance=0.85, nn_budget=100)
 
             cap = cv2.VideoCapture(input_path)
@@ -50,17 +64,12 @@ def show():
             out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
             st.write(f"📏 Ukuran video: {width}x{height}, FPS: {fps:.2f}, Total Frame: {total_frames}")
 
-            CONF_THRESH = 0.5
-            VIOLATION_INTERVAL = 10
-            PADDING = 5
-
             frame_idx = 0
             captured_motor_ids = {}
-
             progress = st.progress(0)
             violation_images = []
 
-            for result in model.predict(source=input_path, stream=True, conf=CONF_THRESH):
+            for result in model.predict(source=input_path, stream=True, conf=conf_thresh):
                 frame = result.orig_img
                 frame_idx += 1
 
@@ -69,7 +78,7 @@ def show():
 
                 for box in result.boxes:
                     conf = float(box.conf)
-                    if conf < CONF_THRESH:
+                    if conf < conf_thresh:
                         continue
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
                     cls = int(box.cls[0])
@@ -98,30 +107,23 @@ def show():
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
                 # Logika pelanggaran
-                for rider_box in boxes_by_cls[3]:  # rider
-                    for no_helmet_box in boxes_by_cls[2]:  # no helmet
+                for rider_box in boxes_by_cls[3]:
+                    for no_helmet_box in boxes_by_cls[2]:
                         if overlaps(rider_box, no_helmet_box):
                             motor_track_id, motor_box = None, None
                             for track in tracks:
-                                if track.is_confirmed() and track.get_det_class() == 1:  # motorcycle
+                                if track.is_confirmed() and track.get_det_class() == 1:
                                     tx1, ty1, tx2, ty2 = map(int, track.to_ltrb())
                                     if overlaps(rider_box, (tx1, ty1, tx2, ty2)):
                                         motor_track_id = track.track_id
                                         motor_box = (tx1, ty1, tx2, ty2)
                                         break
 
-                            if motor_track_id is not None and motor_box is not None:
-                                x1s = [motor_box[0], rider_box[0], no_helmet_box[0]]
-                                y1s = [motor_box[1], rider_box[1], no_helmet_box[1]]
-                                x2s = [motor_box[2], rider_box[2], no_helmet_box[2]]
-                                y2s = [motor_box[3], rider_box[3], no_helmet_box[3]]
-
-                                vx1, vy1 = max(0, min(x1s) - PADDING), max(0, min(y1s) - PADDING)
-                                vx2, vy2 = min(frame.shape[1], max(x2s) + PADDING), min(frame.shape[0], max(y2s) + PADDING)
-
+                            if motor_track_id is not None:
+                                boxes = [motor_box, rider_box, no_helmet_box]
                                 last_saved = captured_motor_ids.get(motor_track_id, -999)
-                                if frame_idx - last_saved >= VIOLATION_INTERVAL:
-                                    crop = clean_frame[vy1:vy2, vx1:vx2]
+                                if frame_idx - last_saved >= interval:
+                                    crop = crop_violation_area(clean_frame, boxes, padding)
                                     save_path = os.path.join(violation_dir, f"motorID_{motor_track_id}_f{frame_idx}.jpg")
                                     cv2.imwrite(save_path, crop)
                                     captured_motor_ids[motor_track_id] = frame_idx
