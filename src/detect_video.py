@@ -2,6 +2,7 @@ import streamlit as st
 import cv2
 import os
 import tempfile
+import subprocess
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from collections import defaultdict
@@ -16,6 +17,17 @@ def overlaps(boxA, boxB):
     bx1, by1, bx2, by2 = boxB
     return max(0, min(ax2, bx2) - max(ax1, bx1)) > 0 and max(0, min(ay2, by2) - max(ay1, by1)) > 0
 
+def convert_video_for_streamlit(input_path, output_path):
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i", input_path,
+        "-vcodec", "libx264",
+        "-acodec", "aac",
+        output_path
+    ]
+    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 def show():
     st.title("🚦 Deteksi Pelanggaran Helm dengan Tracking")
 
@@ -25,11 +37,11 @@ def show():
         tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
         tfile.write(uploaded_video.read())
         input_path = tfile.name
-        output_path = input_path.replace(".mp4", "_output.mp4")
+        raw_output_path = input_path.replace(".mp4", "_raw_output.mp4")
+        streamlit_output_path = input_path.replace(".mp4", "_output_streamlit.mp4")
         violation_dir = tempfile.mkdtemp()
 
         model = load_model()
-
         tracker = DeepSort(max_age=100, n_init=3, max_cosine_distance=0.85, nn_budget=100)
 
         cap = cv2.VideoCapture(input_path)
@@ -39,14 +51,13 @@ def show():
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         cap.release()
 
-        out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+        out = cv2.VideoWriter(raw_output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
         st.info(f"⏳ Memproses video ({total_frames} frame)...")
-        captured_motor_ids = {}
-
-        frame_idx = 0
+        captured_motor_ids = {}  # track_id : last_saved_frame
         violation_images = []
 
+        frame_idx = 0
         for result in model.predict(source=input_path, stream=True, conf=0.5):
             frame = result.orig_img
             frame_idx += 1
@@ -76,14 +87,16 @@ def show():
                 track_id = track.track_id
                 x1, y1, x2, y2 = map(int, track.to_ltrb())
                 color_map = {
-                    0: (0, 255, 0), 1: (0, 165, 255), 2: (0, 0, 255), 3: (255, 0, 0),
+                    0: (0, 255, 0),     # helmet
+                    1: (0, 165, 255),   # motorcycle
+                    2: (0, 0, 255),     # no helmet
+                    3: (255, 0, 0),     # rider
                 }
                 color = color_map.get(cls, (255, 255, 255))
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(frame, f'ID {track_id} - {cls}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
-            # Pelanggaran logika
             for rider_box in boxes_by_cls[3]:
                 for no_helmet_box in boxes_by_cls[2]:
                     if overlaps(rider_box, no_helmet_box):
@@ -110,17 +123,21 @@ def show():
                                 crop = clean_frame[vy1:vy2, vx1:vx2]
                                 save_path = os.path.join(violation_dir, f"motorID_{motor_track_id}.jpg")
                                 cv2.imwrite(save_path, crop)
-                                violation_images.append(save_path)
                                 captured_motor_ids[motor_track_id] = frame_idx
+                                violation_images.append(save_path)
 
             out.write(frame)
 
         out.release()
+
+        # Konversi agar bisa ditampilkan di browser
+        convert_video_for_streamlit(raw_output_path, streamlit_output_path)
+
         st.success("✅ Proses selesai!")
 
-        st.video(output_path)
+        st.video(streamlit_output_path)
 
-        with open(output_path, "rb") as f:
+        with open(streamlit_output_path, "rb") as f:
             st.download_button("⬇️ Unduh Video Hasil", f, file_name="hasil_deteksi.mp4")
 
         if violation_images:
