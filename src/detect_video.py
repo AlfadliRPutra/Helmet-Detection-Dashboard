@@ -119,12 +119,13 @@ def show():
                             vx1, vy1 = max(0, min(x1s)), max(0, min(y1s))
                             vx2, vy2 = min(width, max(x2s)), min(height, max(y2s))
 
-                            if frame_idx - captured_motor_ids.get(motor_track_id, -999) >= 10:
-                                crop = clean_frame[vy1:vy2, vx1:vx2]
+                            if motor_track_id not in captured_motor_ids:
+                                crop = clean_frame[vy1:vy2, vx1:vy2]
                                 save_path = os.path.join(violation_dir, f"motorID_{motor_track_id}.jpg")
                                 cv2.imwrite(save_path, crop)
                                 captured_motor_ids[motor_track_id] = frame_idx
                                 violation_images.append(save_path)
+
 
             out.write(frame)
 
