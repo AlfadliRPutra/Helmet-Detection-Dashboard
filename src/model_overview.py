@@ -9,7 +9,7 @@ def show():
     )
 
     # Info model
-    st.subheader("🧠 Model Info")
+    st.subheader("🧠 Informasi Model")
     col1, col2 = st.columns(2)
     with col1:
         st.write("**Model:** YOLO11")
@@ -38,7 +38,7 @@ def show():
     # Confusion matrix (online image)
     st.subheader("🧮 Confusion Matrix")
     st.image(
-       "assets/images/loss_plot.png",
+       "assets/images/conf_matrix.png",
         caption="Confusion Matrix",
         use_container_width=True
     )
