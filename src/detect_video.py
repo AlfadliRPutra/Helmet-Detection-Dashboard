@@ -51,7 +51,7 @@ def show():
 
         model = load_model()
         tracker = DeepSort(
-            max_age=30,             # kurangin umur track agar tidak terlalu lama tersisa
+            max_age=100,             # kurangin umur track agar tidak terlalu lama tersisa
             n_init=3,               # tetap cukup aman
             max_cosine_distance=0.3,# lebih selektif terhadap kemiripan fitur
             nn_budget=50            # cukup untuk performa bagus
@@ -84,12 +84,14 @@ def show():
 
             for box in result.boxes:
                 conf = float(box.conf)
-                if conf < 0.5:
+                if conf < 0.6:
                     continue
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cls = int(box.cls[0])
                 boxes_by_cls[cls].append((x1, y1, x2, y2))
-                detections.append(([x1, y1, x2 - x1, y2 - y1], conf, cls))
+                
+                if cls == 1:  # hanya track motorcycle
+                    detections.append(([x1, y1, x2 - x1, y2 - y1], conf, cls))
 
             tracks = tracker.update_tracks(detections, frame=frame)
             clean_frame = frame.copy()
