@@ -72,7 +72,7 @@ def show():
         violation_images = []
 
         frame_idx = 0
-        for result in model.predict(source=input_path, stream=True, conf=0.5):
+        for result in model.predict(source=input_path, stream=True, conf=0.6):
             frame = result.orig_img
             frame_idx += 1
 
