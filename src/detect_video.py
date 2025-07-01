@@ -29,15 +29,12 @@ def convert_video_for_streamlit(input_path, output_path):
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def show():
-    st.markdown(
-        """
+    st.markdown("""
         <h2 style='text-align: center;'>🎥 Deteksi Video</h2>
         <hr style="margin-top: 5px; margin-bottom: 30px;">
-        """, unsafe_allow_html=True
-    )
-    st.markdown(""" 
-    Unggah video untuk mulai mendeteksi...
-        """)
+    """, unsafe_allow_html=True)
+
+    st.markdown("Unggah video untuk mulai mendeteksi...")
 
     uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4"])
 
@@ -51,12 +48,11 @@ def show():
 
         model = load_model()
         tracker = DeepSort(
-            max_age=100,             # kurangin umur track agar tidak terlalu lama tersisa
-            n_init=3,               # tetap cukup aman
-            max_cosine_distance=0.3,# lebih selektif terhadap kemiripan fitur
-            nn_budget=50            # cukup untuk performa bagus
+            max_age=100,
+            n_init=3,
+            max_cosine_distance=0.3,
+            nn_budget=50
         )
-
 
         cap = cv2.VideoCapture(input_path)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -68,7 +64,7 @@ def show():
         out = cv2.VideoWriter(raw_output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
         st.info(f"⏳ Memproses video ({total_frames} frame)...")
-        captured_motor_ids = {}  # track_id : last_saved_frame
+        captured_motor_ids = {}
         violation_images = []
 
         frame_idx = 0
@@ -90,29 +86,41 @@ def show():
                 cls = int(box.cls[0])
                 boxes_by_cls[cls].append((x1, y1, x2, y2))
                 
-                if cls == 1:  # hanya track motorcycle
+                # Hanya masukkan motorcycle ke tracker
+                if cls == 1:
                     detections.append(([x1, y1, x2 - x1, y2 - y1], conf, cls))
 
             tracks = tracker.update_tracks(detections, frame=frame)
             clean_frame = frame.copy()
 
+            # Gambar hasil dari tracker (motorcycle dengan ID)
             for track in tracks:
                 if not track.is_confirmed():
                     continue
                 cls = track.get_det_class()
                 track_id = track.track_id
                 x1, y1, x2, y2 = map(int, track.to_ltrb())
-                color_map = {
-                    0: (0, 255, 0),     # helmet
-                    1: (0, 165, 255),   # motorcycle
-                    2: (0, 0, 255),     # no helmet
-                    3: (255, 0, 0),     # rider
-                }
-                color = color_map.get(cls, (255, 255, 255))
+                color = (0, 165, 255)  # motorcycle: oranye
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(frame, f'ID {track_id} - {cls}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
+            # Gambar hasil prediksi langsung untuk class lain
+            for cls_id, boxes in boxes_by_cls.items():
+                if cls_id == 1:
+                    continue  # motorcycle sudah digambar via tracker
+                for (x1, y1, x2, y2) in boxes:
+                    color_map = {
+                        0: (0, 255, 0),     # helmet: hijau
+                        2: (0, 0, 255),     # no helmet: merah
+                        3: (255, 0, 0),     # rider: biru
+                    }
+                    color = color_map.get(cls_id, (255, 255, 255))
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    cv2.putText(frame, f'Cls {cls_id}', (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+            # Cek pelanggaran
             for rider_box in boxes_by_cls[3]:
                 for no_helmet_box in boxes_by_cls[2]:
                     if overlaps(rider_box, no_helmet_box):
@@ -142,23 +150,15 @@ def show():
                                     cv2.imwrite(save_path, crop)
                                     captured_motor_ids[motor_track_id] = frame_idx
 
-                                    # Tambahkan ke daftar UI hanya sekali
                                     if save_path not in violation_images:
                                         violation_images.append(save_path)
-
-
-
-
 
             out.write(frame)
 
         out.release()
 
-        # Konversi agar bisa ditampilkan di browser
         convert_video_for_streamlit(raw_output_path, streamlit_output_path)
-
         st.success("✅ Proses selesai!")
-
         st.video(streamlit_output_path)
 
         with open(streamlit_output_path, "rb") as f:
@@ -174,10 +174,10 @@ def show():
             st.info("👍 Tidak ada pelanggaran yang terdeteksi.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown(""" 
-    **Keterangan:**
-    - <span style='color:green;'>■</span> **Hijau**: Helmet
-    - <span style='color:red;'>■</span> **Merah**: No Helmet
-    - <span style='color:blue;'>■</span> **Biru**: Rider
-    - <span style='color:orange;'>■</span> **Oranye**: Motorcycle
+    st.markdown("""
+        **Keterangan:**
+        - <span style='color:green;'>■</span> **Hijau**: Helmet  
+        - <span style='color:red;'>■</span> **Merah**: No Helmet  
+        - <span style='color:blue;'>■</span> **Biru**: Rider  
+        - <span style='color:orange;'>■</span> **Oranye**: Motorcycle  
     """, unsafe_allow_html=True)
