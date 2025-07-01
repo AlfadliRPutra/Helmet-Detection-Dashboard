@@ -50,7 +50,13 @@ def show():
         violation_dir = tempfile.mkdtemp()
 
         model = load_model()
-        tracker = DeepSort(max_age=100, n_init=3, max_cosine_distance=0.85, nn_budget=100)
+        tracker = DeepSort(
+            max_age=30,             # kurangin umur track agar tidak terlalu lama tersisa
+            n_init=3,               # tetap cukup aman
+            max_cosine_distance=0.3,# lebih selektif terhadap kemiripan fitur
+            nn_budget=50            # cukup untuk performa bagus
+        )
+
 
         cap = cv2.VideoCapture(input_path)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))

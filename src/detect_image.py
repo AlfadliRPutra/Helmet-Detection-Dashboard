@@ -2,9 +2,7 @@ import streamlit as st
 from PIL import Image
 import cv2
 import numpy as np
-# Hapus tempfile karena tidak lagi digunakan
 from ultralytics import YOLO
-# Pastikan file settings.py dan path model sudah benar
 from settings import MODEL_PATH 
 
 # Muat model sekali menggunakan cache Streamlit
