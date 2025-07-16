@@ -124,6 +124,8 @@ def show():
 
 
 
+            padding = 20  
+
             # Cek pelanggaran
             for rider_box in boxes_by_cls[3]:
                 for no_helmet_box in boxes_by_cls[2]:
@@ -144,18 +146,22 @@ def show():
                             x2s = [motor_box[2], rider_box[2], no_helmet_box[2]]
                             y2s = [motor_box[3], rider_box[3], no_helmet_box[3]]
 
-                            vx1, vy1 = max(0, min(x1s)), max(0, min(y1s))
-                            vx2, vy2 = min(width, max(x2s)), min(height, max(y2s))
+                            vx1, vy1 = max(0, min(x1s) - padding), max(0, min(y1s) - padding)
+                            vx2, vy2 = min(width, max(x2s) + padding), min(height, max(y2s) + padding)
 
-                            if frame_idx - captured_motor_ids.get(motor_track_id, -999) >= 10:
+                            if frame_idx - captured_motor_ids.get(motor_track_id, -999) >= 5:
                                 if vx2 > vx1 and vy2 > vy1:
                                     crop = clean_frame[vy1:vy2, vx1:vx2]
-                                    save_path = os.path.join(violation_dir, f"motorID_{motor_track_id}.jpg")
-                                    cv2.imwrite(save_path, crop)
-                                    captured_motor_ids[motor_track_id] = frame_idx
 
-                                    if save_path not in violation_images:
-                                        violation_images.append(save_path)
+                                    # Hindari crop terlalu kecil
+                                    if crop.shape[0] > 30 and crop.shape[1] > 30:
+                                        save_path = os.path.join(violation_dir, f"motorID_{motor_track_id}.jpg")
+                                        cv2.imwrite(save_path, crop)
+                                        captured_motor_ids[motor_track_id] = frame_idx
+
+                                        if save_path not in violation_images:
+                                            violation_images.append(save_path)
+
 
             out.write(frame)
 
