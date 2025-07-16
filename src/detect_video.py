@@ -84,7 +84,8 @@ def show():
                     continue
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cls = int(box.cls[0])
-                boxes_by_cls[cls].append((x1, y1, x2, y2))
+                boxes_by_cls[cls].append((x1, y1, x2, y2, conf))
+
                 
                 # Hanya masukkan motorcycle ke tracker
                 if cls == 1:
@@ -109,16 +110,19 @@ def show():
             for cls_id, boxes in boxes_by_cls.items():
                 if cls_id == 1:
                     continue  # motorcycle sudah digambar via tracker
-                for (x1, y1, x2, y2) in boxes:
+                for (x1, y1, x2, y2, conf) in boxes:
                     color_map = {
                         0: (0, 255, 0),     # helmet: hijau
                         2: (0, 0, 255),     # no helmet: merah
                         3: (255, 0, 0),     # rider: biru
                     }
                     color = color_map.get(cls_id, (255, 255, 255))
+                    label = f'{model.names[cls_id]} {conf:.2f}'
                     cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                    cv2.putText(frame, f'Cls {cls_id}', (x1, y1 - 10),
+                    cv2.putText(frame, label, (x1, y1 - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+
 
             # Cek pelanggaran
             for rider_box in boxes_by_cls[3]:
@@ -165,7 +169,7 @@ def show():
             st.download_button("⬇️ Unduh Video Hasil", f, file_name="hasil_deteksi.mp4")
 
         if violation_images:
-            st.subheader("📸 Gambar Pelanggaran")
+            st.subheader("📸 Violation Captured")
             cols = st.columns(3)
             for idx, img_path in enumerate(violation_images):
                 with cols[idx % 3]:
