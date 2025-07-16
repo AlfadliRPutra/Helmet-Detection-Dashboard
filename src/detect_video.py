@@ -149,7 +149,7 @@ def show():
                             vx1, vy1 = max(0, min(x1s) - padding), max(0, min(y1s) - padding)
                             vx2, vy2 = min(width, max(x2s) + padding), min(height, max(y2s) + padding)
 
-                            if frame_idx - captured_motor_ids.get(motor_track_id, -999) >= 5:
+                            if frame_idx - captured_motor_ids.get(motor_track_id, -999) >= 3:
                                 if vx2 > vx1 and vy2 > vy1:
                                     crop = clean_frame[vy1:vy2, vx1:vx2]
 
