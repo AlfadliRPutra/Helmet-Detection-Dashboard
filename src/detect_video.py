@@ -30,13 +30,13 @@ def convert_video_for_streamlit(input_path, output_path):
 
 def show():
     st.markdown("""
-        <h2 style='text-align: center;'>🎥 Deteksi Video</h2>
+        <h2 style='text-align: center;'>🎥 Video Detection</h2>
         <hr style="margin-top: 5px; margin-bottom: 30px;">
     """, unsafe_allow_html=True)
 
-    st.markdown("Unggah video untuk mulai mendeteksi...")
+    st.markdown("Upload a video to start detection...")
 
-    uploaded_video = st.file_uploader("📤 Upload video untuk analisis", type=["mp4"])
+    uploaded_video = st.file_uploader("📤 Upload video for analysis", type=["mp4"])
 
     if uploaded_video:
         tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
@@ -63,7 +63,7 @@ def show():
 
         out = cv2.VideoWriter(raw_output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
-        st.info(f"⏳ Memproses video ({total_frames} frame)...")
+        st.info(f"⏳ Processing video ({total_frames} frames)...")
         captured_motor_ids = {}
         violation_images = []
 
@@ -127,13 +127,13 @@ def show():
             # Cek pelanggaran
             for rider_box in boxes_by_cls[3]:
                 for no_helmet_box in boxes_by_cls[2]:
-                    if overlaps(rider_box, no_helmet_box):
+                    if overlaps(rider_box[:4], no_helmet_box[:4]):
                         motor_track_id = None
                         motor_box = None
                         for track in tracks:
                             if track.is_confirmed() and track.get_det_class() == 1:
                                 tx1, ty1, tx2, ty2 = map(int, track.to_ltrb())
-                                if overlaps(rider_box, (tx1, ty1, tx2, ty2)):
+                                if overlaps(rider_box[:4], (tx1, ty1, tx2, ty2)):
                                     motor_track_id = track.track_id
                                     motor_box = (tx1, ty1, tx2, ty2)
                                     break
@@ -162,26 +162,27 @@ def show():
         out.release()
 
         convert_video_for_streamlit(raw_output_path, streamlit_output_path)
-        st.success("✅ Proses selesai!")
+        st.success("✅ Processing complete!")
         st.video(streamlit_output_path)
 
         with open(streamlit_output_path, "rb") as f:
-            st.download_button("⬇️ Unduh Video Hasil", f, file_name="hasil_deteksi.mp4")
+            st.download_button("⬇️ Download Result Video", f, file_name="results.mp4")
 
         if violation_images:
-            st.subheader("📸 Violation Captured")
+            st.subheader("📸 Violations Detected")
             cols = st.columns(3)
             for idx, img_path in enumerate(violation_images):
                 with cols[idx % 3]:
                     st.image(img_path, caption=os.path.basename(img_path), use_container_width=True)
         else:
-            st.info("👍 Tidak ada pelanggaran yang terdeteksi.")
+            st.info("👍 No violations detected.")
 
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown("""
-        **Keterangan:**
-        - <span style='color:green;'>■</span> **Hijau**: Helmet  
-        - <span style='color:red;'>■</span> **Merah**: No Helmet  
-        - <span style='color:blue;'>■</span> **Biru**: Rider  
-        - <span style='color:orange;'>■</span> **Oranye**: Motorcycle  
+        **Legend::**
+        - <span style='color:green;'>■</span> Green: Helmet
+        - <span style='color:red;'>■</span> Red: No Helmet
+        - <span style='color:blue;'>■</span> Blue: Rider        
+        - <span style='color:orange;'>■</span> Orange: Motorcycle
+ 
     """, unsafe_allow_html=True)
